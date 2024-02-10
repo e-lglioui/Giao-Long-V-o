@@ -108,7 +108,7 @@ async register(registerDto: RegisterDto) {
     await this.mailerService.sendMail({
       to: email,
       subject: 'Confirm your email',
-      template: './confirmation', // Assurez-vous que ceci correspond au nom du fichier sans l'extension .hbs
+      template: 'confirmation', 
       context: {
         confirmationUrl,
       },

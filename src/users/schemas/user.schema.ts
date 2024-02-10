@@ -30,6 +30,18 @@ export class User extends Document {
   password: string;
 
   @Prop({
+    required: true,
+    trim: true,
+  })
+  firstName: string;
+
+  @Prop({
+    required: true,
+    trim: true,
+  })
+  lastName: string;
+
+  @Prop({
     default: false
   })
   isConfirmed: boolean;
@@ -58,6 +70,26 @@ export class User extends Document {
     default: [Role.STUDENT]
   })
   roles: Role[];
+
+  @Prop({
+    type: String,
+    default: null
+  })
+  stripeCustomerId?: string;
+
+  // Getter virtuel pour le nom complet
+  get fullName(): string {
+    return `${this.firstName} ${this.lastName}`;
+  }
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+// Ajouter les virtuals au schéma
+UserSchema.virtual('fullName').get(function(this: User) {
+  return `${this.firstName} ${this.lastName}`;
+});
+
+// S'assurer que les virtuals sont inclus dans la sérialisation
+UserSchema.set('toJSON', { virtuals: true });
+UserSchema.set('toObject', { virtuals: true });

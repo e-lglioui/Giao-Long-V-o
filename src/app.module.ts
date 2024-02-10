@@ -8,6 +8,7 @@ import databaseConfig from './config/database.config';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './users/users.module'
 import { ErrorHandlerMiddleware } from './common/middlewares/error-handler.middleware';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ErrorHandlerMiddleware } from './common/middlewares/error-handler.middl
     DatabaseModule,
     AuthModule,
     UserModule,
+    MongooseModule.forRoot('mongodb+srv://elglioui:2072003Elglioui@gio-long.5q7hs.mongodb.net/?retryWrites=true&w=majority&appName=gio-long'),
   ],
 })
 export class AppModule implements NestModule {
