@@ -62,7 +62,6 @@ export class SchoolsController {
   findAll(): Promise<School[]> {
     return this.schoolsService.findAll();
   }
-
   @Get(':id')
   @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Get a school by id' })
