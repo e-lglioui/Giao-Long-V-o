@@ -2,7 +2,6 @@ import { IsNotEmpty, IsString, IsEnum, IsOptional, IsArray, ValidateNested } fro
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { GradeLevel } from '../schemas/progress.schema';
-
 export class CreateProgressDto {
   @ApiProperty()
   @IsNotEmpty()
