@@ -17,7 +17,6 @@ import { NotificationStatus } from '../schemas/notification.schema';
 @UseGuards(JwtAuthGuard)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
-
   @Get()
   @ApiOperation({ summary: 'Get user notifications' })
   async getUserNotifications(
