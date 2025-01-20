@@ -28,8 +28,28 @@ export class User extends Document {
   })
   password: string;
 
+  @Prop({
+    default: false
+  })
+  isConfirmed: boolean;
 
+  @Prop({
+    type: String,
+    default: null
+  })
+  confirmationToken: string;
 
+  @Prop({
+    type: String,
+    default: null
+  })
+  resetToken: string;
+
+  @Prop({
+    type: Date,
+    default: null
+  })
+  resetTokenExpiresAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
