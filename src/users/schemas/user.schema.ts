@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { Role } from '../../auth/enums/role.enum';
 
 @Schema({
   collection: 'users',
@@ -50,6 +51,13 @@ export class User extends Document {
     default: null
   })
   resetTokenExpiresAt: Date;
+
+  @Prop({
+    type: [String],
+    enum: Role,
+    default: [Role.STUDENT]
+  })
+  roles: Role[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

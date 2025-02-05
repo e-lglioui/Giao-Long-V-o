@@ -2,15 +2,18 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
 import { UserRepository } from '../repositories/user.repository';
 import { ProfileService } from './profile.service';
-import { Types } from 'mongoose';
+import { getModelToken } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User } from '../interfaces/user.interface';
 import { UserNotFoundException, UserAlreadyExistsException, InvalidCredentialsException } from '../exceptions/user.exceptions';
 import * as bcrypt from 'bcryptjs';
 
 describe('UserService', () => {
-  let userService: UserService;
+  let service: UserService;
+  let userModel: Model<User>;
 
   const TEST_USER = {
-    _id: new Types.ObjectId(),
+    _id: 'testId',
     username: 'testuser',
     email: 'test@example.com',
     password: 'hashedPassword123',
@@ -25,6 +28,7 @@ describe('UserService', () => {
     create: jest.fn(),
     update: jest.fn(),
     exists: jest.fn(),
+    delete: jest.fn(),
   };
 
   const mockProfileService = {
@@ -35,17 +39,44 @@ describe('UserService', () => {
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UserService, { provide: UserRepository, useValue: mockUserRepo }, { provide: ProfileService, useValue: mockProfileService }],
+      providers: [
+        UserService,
+        {
+          provide: UserRepository,
+          useValue: mockUserRepo
+        },
+        {
+          provide: ProfileService,
+          useValue: mockProfileService
+        },
+        {
+          provide: getModelToken('User'),
+          useValue: {
+            new: jest.fn().mockResolvedValue(TEST_USER),
+            constructor: jest.fn().mockResolvedValue(TEST_USER),
+            find: jest.fn(),
+            findOne: jest.fn(),
+            findById: jest.fn(),
+            create: jest.fn(),
+            exec: jest.fn(),
+          }
+        }
+      ],
     }).compile();
 
-    userService = module.get<UserService>(UserService);
+    service = module.get<UserService>(UserService);
+    userModel = module.get<Model<User>>(getModelToken('User'));
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
   });
 
   describe('getAllUsers', () => {
     it('should return all users', async () => {
       mockUserRepo.findAll.mockResolvedValue([TEST_USER]);
 
-      const result = await userService.getAllUsers();
+      const result = await service.getAllUsers();
 
       expect(mockUserRepo.findAll).toHaveBeenCalledTimes(1);
       expect(result).toEqual([TEST_USER]);
@@ -56,7 +87,7 @@ describe('UserService', () => {
     it('should find user by id', async () => {
       mockUserRepo.findById.mockResolvedValue(TEST_USER);
 
-      const result = await userService.findById(TEST_USER._id.toString());
+      const result = await service.findById(TEST_USER._id.toString());
 
       expect(mockUserRepo.findById).toHaveBeenCalledWith(TEST_USER._id.toString());
       expect(result).toEqual(TEST_USER);
@@ -65,7 +96,7 @@ describe('UserService', () => {
     it('should throw UserNotFoundException when user not found', async () => {
       mockUserRepo.findById.mockResolvedValue(null);
 
-      await expect(userService.findById(TEST_USER._id.toString())).rejects.toThrow(UserNotFoundException);
+      await expect(service.findById(TEST_USER._id.toString())).rejects.toThrow(UserNotFoundException);
     });
   });
 
@@ -80,7 +111,7 @@ describe('UserService', () => {
       mockUserRepo.exists.mockResolvedValue(false);
       mockUserRepo.create.mockResolvedValue(TEST_USER);
 
-      const result = await userService.createUser(createUserDto);
+      const result = await service.createUser(createUserDto);
 
       expect(mockUserRepo.exists).toHaveBeenCalled();
       expect(mockUserRepo.create).toHaveBeenCalledWith(
@@ -97,7 +128,7 @@ describe('UserService', () => {
     it('should throw UserAlreadyExistsException when user exists', async () => {
       mockUserRepo.exists.mockResolvedValue(true);
 
-      await expect(userService.createUser(createUserDto)).rejects.toThrow(UserAlreadyExistsException);
+      await expect(service.createUser(createUserDto)).rejects.toThrow(UserAlreadyExistsException);
     });
   });
 
@@ -115,7 +146,7 @@ describe('UserService', () => {
       mockUserRepo.findByCredentials.mockResolvedValue(TEST_USER);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
-      const result = await userService.validateCredentials(credentials.email, credentials.password);
+      const result = await service.validateCredentials(credentials.email, credentials.password);
 
       expect(result).toEqual(TEST_USER);
     });
@@ -124,7 +155,7 @@ describe('UserService', () => {
       mockUserRepo.findByCredentials.mockResolvedValue(TEST_USER);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(userService.validateCredentials(credentials.email, credentials.password)).rejects.toThrow(InvalidCredentialsException);
+      await expect(service.validateCredentials(credentials.email, credentials.password)).rejects.toThrow(InvalidCredentialsException);
     });
   });
 });

@@ -6,6 +6,7 @@ import { User } from '../schemas/user.schema';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import { InvalidCredentialsException } from '../../common/exceptions/invalid-credentials.exception';
 
 @Injectable()
 export class UserService {
@@ -185,5 +186,19 @@ async createUserWithToken(userData: {
     if (updateResult.matchedCount === 0) {
       throw new NotFoundException('User not found');
     }
+  }
+
+  async validateCredentials(email: string, password: string): Promise<User> {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new InvalidCredentialsException();
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new InvalidCredentialsException();
+    }
+
+    return user;
   }
 }
