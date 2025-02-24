@@ -40,7 +40,6 @@ export class EventResultsService {
     if (!event) {
       throw new NotFoundException('Event not found');
     }
-
     return event.participants.map(participant => ({
       user: participant.user,
       results: participant.results,
