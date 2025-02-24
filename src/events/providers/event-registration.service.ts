@@ -12,7 +12,6 @@ export class EventRegistrationService {
     private readonly paymentsService: PaymentsService,
     private readonly notificationsService: NotificationsService
   ) {}
-
   async registerParticipant(eventId: string, userId: string, role: string): Promise<Event> {
     const event = await this.eventModel.findById(eventId)
       .populate('participants.user')

@@ -112,7 +112,6 @@ export class EventsService {
     participant.results = results;
     return event.save();
   }
-
   async getEventStatistics(eventId: string): Promise<any> {
     const event = await this.findOne(eventId);
     const stats = {

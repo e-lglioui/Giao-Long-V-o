@@ -4,7 +4,7 @@ import { UserRepository } from '../repositories/user.repository';
 import { ProfileService } from './profile.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from '../interfaces/user.interface';
+import { User } from '../schemas/user.schema';
 import { UserNotFoundException, UserAlreadyExistsException, InvalidCredentialsException } from '../exceptions/user.exceptions';
 import * as bcrypt from 'bcryptjs';
 
@@ -50,22 +50,20 @@ describe('UserService', () => {
           useValue: mockProfileService
         },
         {
-          provide: getModelToken('User'),
+          provide: getModelToken(User.name),
           useValue: {
-            new: jest.fn().mockResolvedValue(TEST_USER),
-            constructor: jest.fn().mockResolvedValue(TEST_USER),
-            find: jest.fn(),
-            findOne: jest.fn(),
-            findById: jest.fn(),
             create: jest.fn(),
-            exec: jest.fn(),
-          }
+            findOne: jest.fn(),
+            find: jest.fn(),
+            findById: jest.fn(),
+            findByIdAndUpdate: jest.fn(),
+          },
         }
       ],
     }).compile();
 
     service = module.get<UserService>(UserService);
-    userModel = module.get<Model<User>>(getModelToken('User'));
+    userModel = module.get<Model<User>>(getModelToken(User.name));
   });
 
   it('should be defined', () => {

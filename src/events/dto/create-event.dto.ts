@@ -1,7 +1,103 @@
-import { IsNotEmpty, IsString, IsDate, IsEnum, IsOptional, ValidateNested } from 'class-validator';
+import { IsNotEmpty, IsString, IsDate, IsEnum, IsOptional, ValidateNested, IsNumber, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { EventType, EventStatus } from '../schemas/event.schema';
+
+export class EventFeesDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsNumber()
+  amount: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  currency?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  earlyBirdDeadline?: Date;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  earlyBirdAmount?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  refundPolicy?: string;
+}
+
+export class EventCategoryDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  name: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  ageMin?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  ageMax?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  maxParticipants?: number;
+}
+
+export class EventRegistrationDto {
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsNumber()
+  maxParticipants: number;
+
+  @ApiProperty()
+  @IsDate()
+  @Type(() => Date)
+  registrationDeadline: Date;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  requirements?: string[];
+
+  @ApiProperty({ required: false, type: [EventCategoryDto] })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => EventCategoryDto)
+  categories?: EventCategoryDto[];
+}
+
+export class EventScheduleItemDto {
+  @ApiProperty()
+  @IsDate()
+  @Type(() => Date)
+  time: Date;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  @IsString()
+  title: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  location?: string;
+}
 
 export class CreateEventDto {
   @ApiProperty()
@@ -16,7 +112,7 @@ export class CreateEventDto {
   @ApiProperty()
   @IsDate()
   @Type(() => Date)
-  date: Date;
+  startDate: Date;
 
   @ApiProperty()
   @IsDate()
@@ -24,6 +120,7 @@ export class CreateEventDto {
   endDate: Date;
 
   @ApiProperty()
+  @IsNotEmpty()
   @IsString()
   location: string;
 
@@ -37,105 +134,24 @@ export class CreateEventDto {
 
   @ApiProperty()
   @IsNotEmpty()
+  @IsString()
   organizingSchool: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false, type: EventFeesDto })
   @IsOptional()
   @ValidateNested()
   @Type(() => EventFeesDto)
   fees?: EventFeesDto;
 
-  @ApiProperty()
+  @ApiProperty({ required: false, type: EventRegistrationDto })
   @IsOptional()
   @ValidateNested()
   @Type(() => EventRegistrationDto)
   registration?: EventRegistrationDto;
 
-  @ApiProperty()
+  @ApiProperty({ required: false, type: [EventScheduleItemDto] })
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => EventScheduleItemDto)
   schedule?: EventScheduleItemDto[];
-}
-
-export class EventFeesDto {
-  @ApiProperty()
-  @IsNotEmpty()
-  amount: number;
-
-  @ApiProperty()
-  @IsOptional()
-  currency?: string;
-
-  @ApiProperty()
-  @IsOptional()
-  @IsDate()
-  @Type(() => Date)
-  earlyBirdDeadline?: Date;
-
-  @ApiProperty()
-  @IsOptional()
-  earlyBirdAmount?: number;
-
-  @ApiProperty()
-  @IsOptional()
-  refundPolicy?: string;
-}
-
-export class EventRegistrationDto {
-  @ApiProperty()
-  @IsNotEmpty()
-  maxParticipants: number;
-
-  @ApiProperty()
-  @IsDate()
-  @Type(() => Date)
-  registrationDeadline: Date;
-
-  @ApiProperty()
-  @IsOptional()
-  requirements?: string[];
-
-  @ApiProperty()
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => EventCategoryDto)
-  categories?: EventCategoryDto[];
-}
-
-export class EventCategoryDto {
-  @ApiProperty()
-  @IsNotEmpty()
-  name: string;
-
-  @ApiProperty()
-  @IsOptional()
-  ageMin?: number;
-
-  @ApiProperty()
-  @IsOptional()
-  ageMax?: number;
-
-  @ApiProperty()
-  @IsOptional()
-  maxParticipants?: number;
-}
-
-export class EventScheduleItemDto {
-  @ApiProperty()
-  @IsDate()
-  @Type(() => Date)
-  time: Date;
-
-  @ApiProperty()
-  @IsNotEmpty()
-  title: string;
-
-  @ApiProperty()
-  @IsOptional()
-  description?: string;
-
-  @ApiProperty()
-  @IsOptional()
-  location?: string;
 } 

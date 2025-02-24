@@ -3,7 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dtos/login.dto';
 import { RegisterDto } from './dtos/register.dto';
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, ConflictException } from '@nestjs/common';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -21,6 +21,7 @@ describe('AuthController', () => {
     login: jest.fn(),
     register: jest.fn(),
     validateUser: jest.fn(),
+    confirmEmail: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -73,35 +74,34 @@ describe('AuthController', () => {
   });
 
   describe('register', () => {
-    const registerDto: RegisterDto = {
-      email: TEST_USER.email,
-      password: TEST_USER.password,
-      username: TEST_USER.username,
-    };
+    it('should register a new user', async () => {
+      const dto = new RegisterDto();
+      dto.email = 'test@example.com';
+      dto.password = 'password';
+      dto.username = 'testuser';
+      dto.firstName = 'Test';
+      dto.lastName = 'User';
 
-    it('should call authService.register with correct user data and return token', async () => {
-      const expectedResult = {
-        access_token: 'jwt.token.here',
-        user: {
-          id: TEST_USER.id,
-          email: TEST_USER.email,
-          username: TEST_USER.username,
-        },
-      };
+      const mockResponse = { message: 'Registration successful' };
+      jest.spyOn(authService, 'register').mockResolvedValue(mockResponse);
 
-      mockAuthService.register.mockResolvedValue(expectedResult);
-
-      const result = await controller.register(registerDto);
-
-      expect(authService.register).toHaveBeenCalledWith(registerDto);
-      expect(result).toEqual(expectedResult);
+      const result = await controller.register(dto);
+      expect(result).toEqual(mockResponse);
+      expect(authService.register).toHaveBeenCalledWith(dto);
     });
 
-    it('should throw when registration fails', async () => {
-      const error = new Error('Registration failed');
-      mockAuthService.register.mockRejectedValue(error);
+    it('should throw ConflictException when email exists', async () => {
+      const dto = new RegisterDto();
+      dto.email = 'existing@example.com';
+      dto.password = 'password';
+      dto.username = 'existinguser';
+      dto.firstName = 'Existing';
+      dto.lastName = 'User';
 
-      await expect(controller.register(registerDto)).rejects.toThrow(error);
+      const error = new ConflictException('Email already exists');
+      jest.spyOn(authService, 'register').mockRejectedValue(error);
+
+      await expect(controller.register(dto)).rejects.toThrow(error);
     });
   });
 
