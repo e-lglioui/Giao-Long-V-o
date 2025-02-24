@@ -3,8 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import { MailerService } from '@nestjs-modules/mailer';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
-import { User } from 'src/users/schemas/user.schema';
-import { UserService } from 'src/users/providers/user.service';
+import { User } from '../users/schemas/user.schema';
+import { UserService } from '../users/providers/user.service';
 import { LoginDto } from './dtos/login.dto';
 import { RegisterDto } from './dtos/register.dto';
 
@@ -24,31 +24,49 @@ export class AuthService {
     return null;
   }
 
-// In auth.service.ts
-async register(registerDto: RegisterDto) {
-  // Check if user exists code remains the same...
-  const existingUser = await this.userService.findByEmail(registerDto.email);
-  if (existingUser) {
-    throw new ConflictException('Email already exists');
-  }
+  async register(registerDto: RegisterDto) {
+    const existingUser = await this.userService.findByEmail(registerDto.email);
+    if (existingUser) {
+      throw new ConflictException('Email already exists');
+    }
 
-  const confirmationToken = uuidv4();
-  const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const confirmationToken = uuidv4();
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    
+    const user = await this.userService.createUserWithToken({
+      username: registerDto.username,
+      email: registerDto.email,
+      password: hashedPassword,
+      firstName: registerDto.firstName,
+      lastName: registerDto.lastName,
+      confirmationToken,
+      isConfirmed: false
+    });
+
   
-  // Only pass the properties that createUserWithToken expects
-  const user = await this.userService.createUserWithToken({
-    username: registerDto.username,
-    email: registerDto.email,
-    password: hashedPassword,
-    confirmationToken
-  });
+    const tempToken = this.jwtService.sign(
+      { 
+        sub: user.id,
+        email: user.email,
+        username: user.username,
+        isTemporary: true
+      },
+      { expiresIn: '1h' } 
+    );
 
-  await this.sendConfirmationEmail(user.email, confirmationToken);
+    await this.sendConfirmationEmail(user.email, confirmationToken);
 
-  return {
-    message: 'Registration successful. Please check your email to confirm your account.',
-  };
-}
+    return {
+      message: 'Registration successful. Please check your email to confirm your account.',
+      access_token: tempToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        isConfirmed: false
+      }
+    };
+  }
 
   async confirmEmail(token: string) {
     const user = await this.userService.findByConfirmationToken(token);
@@ -108,20 +126,20 @@ async register(registerDto: RegisterDto) {
     await this.mailerService.sendMail({
       to: email,
       subject: 'Confirm your email',
-      template: 'confirmation', 
+      template: 'confirmation', // Update template path
       context: {
         confirmationUrl,
       },
     });
   }
-
+  
   private async sendPasswordResetEmail(email: string, token: string) {
     const resetUrl = `${process.env.FRONTEND_URL}/auth/reset-password?token=${token}`;
     
     await this.mailerService.sendMail({
       to: email,
       subject: 'Reset your password',
-      template: 'reset-password',
+      template: 'reset-password', // Update template path
       context: {
         resetUrl,
       },

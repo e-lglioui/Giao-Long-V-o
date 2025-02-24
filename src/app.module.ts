@@ -1,4 +1,4 @@
-import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer, OnModuleInit } from '@nestjs/common';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -6,9 +6,11 @@ import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handleba
 import { join } from 'path';
 import databaseConfig from './config/database.config';
 import { AuthModule } from './auth/auth.module';
-import { UserModule } from './users/users.module'
+import { UserModule } from './users/users.module';
 import { ErrorHandlerMiddleware } from './common/middlewares/error-handler.middleware';
 import { MongooseModule } from '@nestjs/mongoose';
+import { EventsModule } from './events/events.module';
+import { existsSync, readdirSync } from 'fs';
 
 @Module({
   imports: [
@@ -20,12 +22,14 @@ import { MongooseModule } from '@nestjs/mongoose';
     MailerModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (config: ConfigService) => {
-        console.log('Mail Configuration:', {
-          host: config.get('SMTP_HOST'),
-          port: config.get('MAIL_PORT'),
-          user: config.get('SMTP_USER')
-        });
+        const templateDir = join(process.cwd(), 'dist', 'mail', 'templates');
+        console.log('Template Directory:', templateDir);
+        console.log('Template directory exists:', existsSync(templateDir));
         
+        if (existsSync(templateDir)) {
+          console.log('Contents of template directory:', readdirSync(templateDir));
+        }
+
         return {
           transport: {
             host: config.get('SMTP_HOST'),
@@ -40,7 +44,7 @@ import { MongooseModule } from '@nestjs/mongoose';
             from: '"No Reply" <noreply@example.com>',
           },
           template: {
-            dir: join(process.cwd(), 'dist/templates'),  // Chemin corrigé
+            dir: templateDir,
             adapter: new HandlebarsAdapter(),
             options: {
               strict: true,
@@ -53,10 +57,23 @@ import { MongooseModule } from '@nestjs/mongoose';
     DatabaseModule,
     AuthModule,
     UserModule,
+    EventsModule,
     MongooseModule.forRoot('mongodb+srv://elglioui:2072003Elglioui@gio-long.5q7hs.mongodb.net/?retryWrites=true&w=majority&appName=gio-long'),
   ],
 })
-export class AppModule implements NestModule {
+export class AppModule implements NestModule, OnModuleInit {
+  async onModuleInit() {
+    // Log template directory contents on startup
+    const templateDir = join(process.cwd(), 'dist', 'mail', 'templates');
+    console.log('Checking template directory on startup:');
+    console.log('Template Directory:', templateDir);
+    console.log('Template directory exists:', existsSync(templateDir));
+    
+    if (existsSync(templateDir)) {
+      console.log('Contents of template directory:', readdirSync(templateDir));
+    }
+  }
+
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(ErrorHandlerMiddleware).forRoutes('*');
   }

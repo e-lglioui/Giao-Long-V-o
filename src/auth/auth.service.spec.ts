@@ -1,24 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../users/providers/user.service';
-import { MailerService } from '../mailer/mailer.service';
+import { JwtService } from '@nestjs/jwt';
+import { MailerService } from '@nestjs-modules/mailer';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { RegisterDto } from './dtos/register.dto';
 
 describe('AuthService', () => {
   let service: AuthService;
+  let userService: UserService;
+  let jwtService: JwtService;
+  let mailerService: MailerService;
 
-  const mockJwtService = {
-    sign: jest.fn().mockReturnValue('test-token'),
-  };
-
-  const mockUserService = {
-    findByEmail: jest.fn(),
-    create: jest.fn(),
-    validateCredentials: jest.fn(),
-  };
-
-  const mockMailerService = {
-    sendMail: jest.fn().mockImplementation(() => Promise.resolve()),
+  const mockUser = {
+    id: '1',
+    email: 'test@example.com',
+    password: 'hashedPassword',
+    isConfirmed: true,
+    toObject: () => ({
+      id: '1',
+      email: 'test@example.com',
+      isConfirmed: true
+    })
   };
 
   beforeEach(async () => {
@@ -26,25 +29,33 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         {
-          provide: JwtService,
-          useValue: mockJwtService,
+          provide: UserService,
+          useValue: {
+            findByEmail: jest.fn(),
+            createUserWithToken: jest.fn(),
+            findByConfirmationToken: jest.fn(),
+            confirmUser: jest.fn()
+          },
         },
         {
-          provide: UserService,
-          useValue: mockUserService,
+          provide: JwtService,
+          useValue: {
+            sign: jest.fn().mockReturnValue('test-token'),
+          },
         },
         {
           provide: MailerService,
-          useValue: mockMailerService,
+          useValue: {
+            sendMail: jest.fn().mockResolvedValue(true),
+          },
         },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+    userService = module.get<UserService>(UserService);
+    jwtService = module.get<JwtService>(JwtService);
+    mailerService = module.get<MailerService>(MailerService);
   });
 
   describe('login', () => {
@@ -53,45 +64,75 @@ describe('AuthService', () => {
       password: 'password123',
     };
 
-    const mockUser = {
-      _id: 'userId',
-      email: 'test@example.com',
-    };
-
     it('should return token on successful login', async () => {
-      mockUserService.validateCredentials.mockResolvedValue(mockUser);
+      jest.spyOn(userService, 'findByEmail').mockResolvedValue(mockUser as any);
+      jest.spyOn(service, 'validateUser').mockResolvedValue(mockUser as any);
 
       const result = await service.login(loginDto);
 
       expect(result).toHaveProperty('access_token');
-      expect(mockUserService.validateCredentials).toHaveBeenCalledWith(
-        loginDto.email,
-        loginDto.password,
-      );
-      expect(mockJwtService.sign).toHaveBeenCalled();
+      expect(userService.findByEmail).toHaveBeenCalledWith(loginDto.email);
+      expect(jwtService.sign).toHaveBeenCalled();
+    });
+
+    it('should throw UnauthorizedException when user is not found', async () => {
+      jest.spyOn(userService, 'findByEmail').mockResolvedValue(null);
+
+      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw UnauthorizedException when user is not confirmed', async () => {
+      const unconfirmedUser = { ...mockUser, isConfirmed: false };
+      jest.spyOn(userService, 'findByEmail').mockResolvedValue(unconfirmedUser as any);
+
+      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
     });
   });
 
   describe('register', () => {
-    const registerDto = {
-      email: 'test@example.com',
-      password: 'password123',
-    };
+    it('should register a new user', async () => {
+      const dto = new RegisterDto();
+      dto.email = 'test@example.com';
+      dto.password = 'password';
+      dto.username = 'testuser';
+      dto.firstName = 'Test';
+      dto.lastName = 'User';
 
-    const mockUser = {
-      _id: 'userId',
-      email: 'test@example.com',
-    };
+      jest.spyOn(userService, 'findByEmail').mockResolvedValue(null);
+      jest.spyOn(userService, 'createUserWithToken').mockResolvedValue({} as any);
+      jest.spyOn(mailerService, 'sendMail').mockResolvedValue({} as any);
 
-    it('should register a new user and return token', async () => {
-      mockUserService.create.mockResolvedValue(mockUser);
+      const result = await service.register(dto);
+      expect(result).toEqual({
+        message: 'Registration successful. Please check your email to confirm your account.',
+      });
+    });
 
-      const result = await service.register(registerDto);
+    it('should throw ConflictException when email exists', async () => {
+      const dto = new RegisterDto();
+      dto.email = 'existing@example.com';
 
-      expect(result).toHaveProperty('access_token');
-      expect(mockUserService.create).toHaveBeenCalledWith(registerDto);
-      expect(mockJwtService.sign).toHaveBeenCalled();
-      expect(mockMailerService.sendMail).toHaveBeenCalled();
+      jest.spyOn(userService, 'findByEmail').mockResolvedValue({} as any);
+
+      await expect(service.register(dto)).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('confirmEmail', () => {
+    it('should confirm user email', async () => {
+      const token = 'valid-token';
+      jest.spyOn(userService, 'findByConfirmationToken').mockResolvedValue(mockUser as any);
+      jest.spyOn(userService, 'confirmUser').mockResolvedValue({} as any);
+
+      const result = await service.confirmEmail(token);
+      expect(result).toEqual({ message: 'Email confirmed successfully' });
+    });
+
+    it('should throw UnauthorizedException for invalid token', async () => {
+      const token = 'invalid-token';
+      jest.spyOn(userService, 'findByConfirmationToken').mockResolvedValue(null);
+
+      await expect(service.confirmEmail(token)).rejects.toThrow(UnauthorizedException);
     });
   });
 });
