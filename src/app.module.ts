@@ -10,6 +10,7 @@ import { UserModule } from './users/users.module';
 import { ErrorHandlerMiddleware } from './common/middlewares/error-handler.middleware';
 import { MongooseModule } from '@nestjs/mongoose';
 import { EventsModule } from './events/events.module';
+import {SchoolsModule } from './schools/schools.module';
 import { existsSync, readdirSync } from 'fs';
 
 @Module({
@@ -58,6 +59,7 @@ import { existsSync, readdirSync } from 'fs';
     AuthModule,
     UserModule,
     EventsModule,
+    SchoolsModule ,
     MongooseModule.forRoot('mongodb+srv://elglioui:2072003Elglioui@gio-long.5q7hs.mongodb.net/?retryWrites=true&w=majority&appName=gio-long'),
   ],
 })
