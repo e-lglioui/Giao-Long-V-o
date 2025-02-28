@@ -10,6 +10,6 @@ import { UserService } from './providers/user.service';
     ])
   ],
   providers: [UserService],
-  exports: [UserService],
+  exports: [UserService,MongooseModule],
 })
 export class UserModule {}

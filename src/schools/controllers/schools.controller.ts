@@ -25,6 +25,8 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { Role } from '../../auth/enums/role.enum';
 
+import { ParseObjectIdPipe } from '../pipes/mongodb-id.pipe'; // Import the correct pipe
+
 @ApiTags('schools')
 @ApiBearerAuth()
 @Controller('schools')
@@ -33,7 +35,6 @@ export class SchoolsController {
   constructor(private readonly schoolsService: SchoolsService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Create a new school' })
   @ApiResponse({ 
     status: HttpStatus.CREATED, 
@@ -52,7 +53,6 @@ export class SchoolsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Get all schools' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -64,7 +64,6 @@ export class SchoolsController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Get a school by id' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -75,12 +74,11 @@ export class SchoolsController {
     status: HttpStatus.NOT_FOUND, 
     description: 'School not found' 
   })
-  findOne(@Param('id', ParseUUIDPipe) id: string): Promise<School> {
+  findOne(@Param('id', ParseObjectIdPipe) id: string): Promise<School> { // Use ParseObjectIdPipe
     return this.schoolsService.findOne(id);
   }
 
   @Put(':id')
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Update a school' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -88,7 +86,7 @@ export class SchoolsController {
     type: School 
   })
   update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('id', ParseObjectIdPipe) id: string, // Use ParseObjectIdPipe
     @Body(new ValidationPipe({ transform: true })) 
     updateSchoolDto: Partial<CreateSchoolDto>
   ): Promise<School> {
@@ -96,18 +94,16 @@ export class SchoolsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Delete a school' })
   @ApiResponse({ 
     status: HttpStatus.NO_CONTENT, 
     description: 'School deleted' 
   })
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  async remove(@Param('id', ParseObjectIdPipe) id: string): Promise<void> { // Use ParseObjectIdPipe
     await this.schoolsService.remove(id);
   }
 
   @Put(':id/instructors/:instructorId')
-  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Add instructor to school' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -115,14 +111,13 @@ export class SchoolsController {
     type: School 
   })
   addInstructor(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('instructorId', ParseUUIDPipe) instructorId: string
+    @Param('id', ParseObjectIdPipe) id: string, // Use ParseObjectIdPipe
+    @Param('instructorId', ParseObjectIdPipe) instructorId: string // Use ParseObjectIdPipe
   ): Promise<School> {
     return this.schoolsService.addInstructor(id, instructorId);
   }
 
   @Put(':id/students/:studentId')
-  @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Add student to school' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -130,9 +125,9 @@ export class SchoolsController {
     type: School 
   })
   addStudent(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Param('studentId', ParseUUIDPipe) studentId: string
+    @Param('id', ParseObjectIdPipe) id: string, // Use ParseObjectIdPipe
+    @Param('studentId', ParseObjectIdPipe) studentId: string // Use ParseObjectIdPipe
   ): Promise<School> {
     return this.schoolsService.addStudent(id, studentId);
   }
-} 
+}
