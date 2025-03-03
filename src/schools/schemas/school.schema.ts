@@ -1,23 +1,47 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
-import { User } from '../../users/schemas/user.schema';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
+import { Document, Schema as MongooseSchema } from "mongoose"
+import type { User } from "../../users/schemas/user.schema"
+import type { Student } from "../../students/schemas/student.schema"
+
+export class Schedule {
+  @Prop({ required: true })
+  openingTime: string
+
+  @Prop({ required: true })
+  closingTime: string
+
+  @Prop({ type: [String], default: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] })
+  operatingDays: string[]
+}
 
 @Schema({ timestamps: true })
 export class School extends Document {
   @Prop({ required: true })
-  name: string;
+  name: string
 
   @Prop()
-  address: string;
+  address: string
 
   @Prop()
-  contactNumber: string;
+  contactNumber: string
 
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }] })
-  instructors: User[];
+  @Prop({ type: [String], default: [] })
+  images: string[]
 
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }] })
-  students: User[];
+  @Prop({ type: Number, default: 1000 })
+  maxStudents: number
+
+  @Prop({ type: Schedule, default: { openingTime: "08:00", closingTime: "16:00" } })
+  schedule: Schedule
+
+  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: "User" }] })
+  instructors: User[]
+
+  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: "User" }] })
+  students: User[]
+
+  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: "Student" }] })
+  studentReferences: Student[]
 
   @Prop({
     type: {
@@ -27,10 +51,11 @@ export class School extends Document {
     },
   })
   dashboard: {
-    studentCount: number;
-    revenue: number;
-    performanceStats: Map<string, number>;
-  };
+    studentCount: number
+    revenue: number
+    performanceStats: Map<string, number>
+  }
 }
 
-export const SchoolSchema = SchemaFactory.createForClass(School); 
+export const SchoolSchema = SchemaFactory.createForClass(School)
+

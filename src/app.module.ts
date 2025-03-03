@@ -11,6 +11,7 @@ import { ErrorHandlerMiddleware } from './common/middlewares/error-handler.middl
 import { MongooseModule } from '@nestjs/mongoose';
 import { EventsModule } from './events/events.module';
 import {SchoolsModule } from './schools/schools.module';
+import { StudentsModule } from './students/students.module';
 import { existsSync, readdirSync } from 'fs';
 
 @Module({
@@ -60,6 +61,7 @@ import { existsSync, readdirSync } from 'fs';
     UserModule,
     EventsModule,
     SchoolsModule ,
+    StudentsModule,
     MongooseModule.forRoot('mongodb+srv://elglioui:2072003Elglioui@gio-long.5q7hs.mongodb.net/?retryWrites=true&w=majority&appName=gio-long'),
   ],
 })

@@ -6,9 +6,18 @@ import { SchoolValidatorService } from "./providers/school-validator.service"
 import { School, SchoolSchema } from "./schemas/school.schema"
 import { UserModule } from "../users/users.module"
 import { ParseObjectIdPipe } from "./pipes/mongodb-id.pipe"
+import { Student, StudentSchema } from "../students/schemas/student.schema"
+import { CoursesModule } from "../courses/courses.module"
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: School.name, schema: SchoolSchema }]), UserModule],
+  imports: [
+    MongooseModule.forFeature([
+      { name: School.name, schema: SchoolSchema },
+      { name: Student.name, schema: StudentSchema },
+    ]),
+    UserModule,
+    CoursesModule,
+  ],
   controllers: [SchoolsController],
   providers: [SchoolsService, SchoolValidatorService, ParseObjectIdPipe],
   exports: [SchoolsService],
