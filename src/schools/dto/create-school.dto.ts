@@ -18,7 +18,7 @@ export class ScheduleDto {
 }
 
 export class CreateSchoolDto {
-  @ApiProperty()
+  @ApiProperty({ required: true })
   @IsString()
   name: string
 
@@ -26,6 +26,11 @@ export class CreateSchoolDto {
   @IsString()
   @IsOptional()
   address?: string
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  description?: string
 
   @ApiProperty({ required: false })
   @IsString()
@@ -49,7 +54,7 @@ export class CreateSchoolDto {
   @IsOptional()
   schedule?: ScheduleDto
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, type: [String] })
   @IsArray()
   @IsOptional()
   instructors?: string[]

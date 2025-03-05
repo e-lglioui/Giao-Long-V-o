@@ -1,9 +1,9 @@
-import { Injectable, Logger } from "@nestjs/common"
+import { Injectable, Logger, forwardRef, Inject } from "@nestjs/common"
 import { InjectModel } from "@nestjs/mongoose"
 import type { Model } from "mongoose"
 import { School } from "../schemas/school.schema"
 import type { CreateSchoolDto } from "../dto/create-school.dto"
-import type { SchoolValidatorService } from "./school-validator.service"
+import { SchoolValidatorService } from "./school-validator.service"
 import { SchoolNotFoundException, InvalidOperationException } from "../../common/exceptions/custom.exceptions"
 import { User } from "../../users/schemas/user.schema"
 import { Student } from "../../students/schemas/student.schema"
@@ -16,15 +16,34 @@ export class SchoolsService {
     @InjectModel(School.name) private readonly schoolModel: Model<School>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
     @InjectModel(Student.name) private readonly studentModel: Model<Student>,
-    private readonly validatorService: SchoolValidatorService
+    @Inject(forwardRef(() => SchoolValidatorService)) private readonly validatorService: SchoolValidatorService
   ) {}
 
   async create(createSchoolDto: CreateSchoolDto): Promise<School> {
+    this.logger.log(`Creating school with data: ${JSON.stringify(createSchoolDto)}`)
+
+    // Validate school name
+    if (!createSchoolDto.name) {
+      this.logger.error("Name is missing in the DTO")
+      throw new InvalidOperationException("School name is required")
+    }
+
     try {
+      // Validate school name uniqueness
       await this.validatorService.validateSchoolName(createSchoolDto.name)
 
       const createdSchool = new this.schoolModel({
-        ...createSchoolDto,
+        name: createSchoolDto.name,
+        address: createSchoolDto.address,
+        contactNumber: createSchoolDto.contactNumber,
+        description: createSchoolDto.description,
+        maxStudents: createSchoolDto.maxStudents,
+        images: createSchoolDto.images || [],
+        schedule: createSchoolDto.schedule || {
+          openingTime: "08:00",
+          closingTime: "16:00",
+          operatingDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        },
         dashboard: {
           studentCount: 0,
           revenue: 0,
@@ -41,6 +60,7 @@ export class SchoolsService {
     }
   }
 
+  // Rest of the service remains the same
   async findAll(): Promise<School[]> {
     try {
       return await this.schoolModel

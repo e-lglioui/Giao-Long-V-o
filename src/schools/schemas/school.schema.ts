@@ -16,11 +16,14 @@ export class Schedule {
 
 @Schema({ timestamps: true })
 export class School extends Document {
-  @Prop({ required: true })
+  @Prop({ required: true, default: undefined }) // Explicitly set default to undefined
   name: string
 
   @Prop()
   address: string
+
+  @Prop()
+  description: string
 
   @Prop()
   contactNumber: string

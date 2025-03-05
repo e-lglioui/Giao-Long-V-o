@@ -1,33 +1,38 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Body,
-  Param,
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Put, 
+  Delete, 
+  Body, 
+  Param, 
   UseGuards,
   ValidationPipe,
-  HttpStatus,
-  Patch,
-} from "@nestjs/common"
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger"
-import type { SchoolsService } from "../providers/schools.service"
-import type { CreateSchoolDto } from "../dto/create-school.dto"
-import { School } from "../schemas/school.schema"
-import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard"
-import { RolesGuard } from "../../auth/guards/roles.guard"
-
-import { ParseObjectIdPipe } from "../pipes/mongodb-id.pipe"
-
-@ApiTags("schools")
+  HttpStatus
+} from '@nestjs/common';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiBearerAuth 
+} from '@nestjs/swagger';
+import { SchoolsService } from '../providers/schools.service';
+import { CreateSchoolDto } from '../dto/create-school.dto';
+import { School } from '../schemas/school.schema';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { ParseObjectIdPipe } from '../pipes/mongodb-id.pipe';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { Role } from '../../auth/enums/role.enum';
+@ApiTags('schools')
 @ApiBearerAuth()
-@Controller("schools")
+@Controller('schools')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SchoolsController {
   constructor(private readonly schoolsService: SchoolsService) {}
 
   @Post()
+  // @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Create a new school' })
   @ApiResponse({ 
     status: HttpStatus.CREATED, 
@@ -39,24 +44,29 @@ export class SchoolsController {
     description: 'School with this name already exists' 
   })
   create(
-    @Body(new ValidationPipe({ transform: true })) 
+    @Body(new ValidationPipe({ 
+      transform: true,
+      whitelist: true 
+    })) 
     createSchoolDto: CreateSchoolDto
   ): Promise<School> {
     return this.schoolsService.create(createSchoolDto);
   }
 
   @Get()
-  @ApiOperation({ summary: "Get all schools" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "List of all schools",
-    type: [School],
+  // @Roles(Role.ADMIN, Role.STAFF)
+  @ApiOperation({ summary: 'Get all schools' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'List of all schools',
+    type: [School] 
   })
   findAll(): Promise<School[]> {
-    return this.schoolsService.findAll()
+    return this.schoolsService.findAll();
   }
 
   @Get(':id')
+  // @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Get a school by id' })
   @ApiResponse({ 
     status: HttpStatus.OK, 
@@ -71,22 +81,24 @@ export class SchoolsController {
     return this.schoolsService.findOne(id);
   }
 
-  @Put(":id")
-  @ApiOperation({ summary: "Update a school" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "School updated",
-    type: School,
+  @Put(':id')
+  // @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Update a school' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'School updated',
+    type: School 
   })
   update(
     @Param('id', ParseObjectIdPipe) id: string,
     @Body(new ValidationPipe({ transform: true })) 
-    updateSchoolDto: Partial<CreateSchoolDto>,
+    updateSchoolDto: Partial<CreateSchoolDto>
   ): Promise<School> {
-    return this.schoolsService.update(id, updateSchoolDto)
+    return this.schoolsService.update(id, updateSchoolDto);
   }
 
   @Delete(':id')
+  // @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Delete a school' })
   @ApiResponse({ 
     status: HttpStatus.NO_CONTENT, 
@@ -96,57 +108,33 @@ export class SchoolsController {
     await this.schoolsService.remove(id);
   }
 
-  @Put(":id/instructors/:instructorId")
-  @ApiOperation({ summary: "Add instructor to school" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "Instructor added to school",
-    type: School,
+  @Put(':id/instructors/:instructorId')
+  // @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Add instructor to school' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'Instructor added to school',
+    type: School 
   })
   addInstructor(
     @Param('id', ParseObjectIdPipe) id: string,
-    @Param('instructorId', ParseObjectIdPipe) instructorId: string,
+    @Param('instructorId', ParseObjectIdPipe) instructorId: string
   ): Promise<School> {
-    return this.schoolsService.addInstructor(id, instructorId)
+    return this.schoolsService.addInstructor(id, instructorId);
   }
 
-  @Put(":id/students/:studentId")
-  @ApiOperation({ summary: "Add student to school" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "Student added to school",
-    type: School,
+  @Put(':id/students/:studentId')
+  // @Roles(Role.ADMIN, Role.STAFF)
+  @ApiOperation({ summary: 'Add student to school' })
+  @ApiResponse({ 
+    status: HttpStatus.OK, 
+    description: 'Student added to school',
+    type: School 
   })
   addStudent(
     @Param('id', ParseObjectIdPipe) id: string,
-    @Param('studentId', ParseObjectIdPipe) studentId: string,
+    @Param('studentId', ParseObjectIdPipe) studentId: string
   ): Promise<School> {
-    return this.schoolsService.addStudent(id, studentId)
-  }
-
-  @Patch(":id/images")
-  @ApiOperation({ summary: "Add image to school" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "Image added to school",
-    type: School,
-  })
-  addImage(@Param('id', ParseObjectIdPipe) id: string, @Body() body: { imageUrl: string }): Promise<School> {
-    return this.schoolsService.addImage(id, body.imageUrl)
-  }
-
-  @Patch(":id/schedule")
-  @ApiOperation({ summary: "Update school schedule" })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: "School schedule updated",
-    type: School,
-  })
-  updateSchedule(
-    @Param('id', ParseObjectIdPipe) id: string,
-    @Body() schedule: { openingTime: string; closingTime: string; operatingDays?: string[] },
-  ): Promise<School> {
-    return this.schoolsService.updateSchedule(id, schedule)
+    return this.schoolsService.addStudent(id, studentId);
   }
 }
-
