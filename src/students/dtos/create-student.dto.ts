@@ -1,4 +1,5 @@
-import { IsString, IsDate, IsNotEmpty, IsArray, IsOptional } from 'class-validator';
+import { IsString, IsDate, IsNotEmpty, IsArray, IsOptional, IsMongoId } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateStudentDto {
@@ -17,9 +18,16 @@ export class CreateStudentDto {
   @IsNotEmpty()
   studentId: string;
 
-  @ApiProperty()
+  @ApiProperty({ type: String, format: 'date-time' }) // Swagger format
+  @IsNotEmpty()
+  @Type(() => Date) // Transforme en instance de Date
   @IsDate()
   dateOfBirth: Date;
+
+  @ApiProperty()
+  @IsMongoId() // Validation pour ObjectId
+  @IsNotEmpty()
+  school: string;
 
   @ApiProperty()
   @IsString()
@@ -29,5 +37,6 @@ export class CreateStudentDto {
   @ApiProperty({ required: false })
   @IsArray()
   @IsOptional()
+  @IsString({ each: true }) // Chaque élément doit être une chaîne
   courses?: string[];
-} 
+}

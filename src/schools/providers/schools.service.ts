@@ -38,6 +38,7 @@ export class SchoolsService {
         contactNumber: createSchoolDto.contactNumber,
         description: createSchoolDto.description,
         maxStudents: createSchoolDto.maxStudents,
+        location: createSchoolDto.location,
         images: createSchoolDto.images || [],
         schedule: createSchoolDto.schedule || {
           openingTime: "08:00",
@@ -235,6 +236,102 @@ export class SchoolsService {
       this.logger.error(`Failed to delete school ${id}: ${error.message}`, error.stack)
       throw error
     }
+  }
+  async removeImage(schoolId: string, imageUrl: string): Promise<School> {
+    try {
+      const school = await this.schoolModel.findById(schoolId)
+      if (!school) {
+        throw new SchoolNotFoundException(schoolId)
+      }
+
+      if (!school.images) {
+        throw new InvalidOperationException("School does not have any images")
+      }
+
+      const imageIndex = school.images.findIndex((img) => img === imageUrl)
+      if (imageIndex === -1) {
+        throw new InvalidOperationException("Image not found in school")
+      }
+
+      school.images.splice(imageIndex, 1)
+      const updatedSchool = await school.save()
+
+      this.logger.log(`Removed image from school ${schoolId}`)
+      return updatedSchool
+    } catch (error) {
+      this.logger.error(`Failed to remove image from school ${schoolId}: ${error.message}`, error.stack)
+      throw error
+    }
+  }
+
+  async findNearbySchools(latitude: number, longitude: number, maxDistance?: number): Promise<School[]> {
+    try {
+      this.logger.log(
+        `Finding schools near coordinates: [${latitude}, ${longitude}] within ${maxDistance || 10000} meters`,
+      )
+
+      // Validate inputs
+      if (isNaN(latitude) || isNaN(longitude)) {
+        throw new InvalidOperationException("Valid latitude and longitude are required")
+      }
+
+      // Set default distance if not provided
+      const distance = maxDistance || 10000 // Default to 10km if not specified
+
+      // Find schools near the provided coordinates
+      const schools = await this.schoolModel
+        .find({
+          "location.latitude": { $exists: true },
+          "location.longitude": { $exists: true },
+        })
+        .exec()
+
+      // Filter schools by distance (since we're not using a geospatial index yet)
+      const nearbySchools = schools.filter((school) => {
+        if (!school.location?.latitude || !school.location?.longitude) return false
+
+        // Calculate distance using the Haversine formula
+        const distanceInKm = this.calculateDistance(
+          latitude,
+          longitude,
+          school.location.latitude,
+          school.location.longitude,
+        )
+
+        // Convert the distance to meters for comparison
+        return distanceInKm * 1000 <= distance
+      })
+
+      // Sort schools by distance from the user's location
+      nearbySchools.sort((a, b) => {
+        const distanceA = this.calculateDistance(latitude, longitude, a.location.latitude, a.location.longitude)
+        const distanceB = this.calculateDistance(latitude, longitude, b.location.latitude, b.location.longitude)
+        return distanceA - distanceB
+      })
+
+      this.logger.log(`Found ${nearbySchools.length} schools within ${distance} meters`)
+      return nearbySchools
+    } catch (error) {
+      this.logger.error(`Failed to find nearby schools: ${error.message}`, error.stack)
+      throw error
+    }
+  }
+
+  // Helper method to calculate distance between two points using the Haversine formula
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371 // Radius of the Earth in kilometers
+    const dLat = this.deg2rad(lat2 - lat1)
+    const dLon = this.deg2rad(lon2 - lon1)
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    const distance = R * c // Distance in kilometers
+    return distance
+  }
+
+  private deg2rad(deg: number): number {
+    return deg * (Math.PI / 180)
   }
 }
 

@@ -10,6 +10,7 @@ import { Student, StudentSchema } from "../students/schemas/student.schema"
 import { CoursesModule } from "../courses/courses.module"
 import { User, UserSchema } from "../users/schemas/user.schema"
 import { StudentsModule } from "../students/students.module"
+import { UploadModule } from "../upload/upload.module"
 
 @Module({
   imports: [
@@ -21,19 +22,10 @@ import { StudentsModule } from "../students/students.module"
     UserModule,
     CoursesModule,
     StudentsModule,
+    UploadModule,
   ],
   controllers: [SchoolsController],
-  providers: [
-    {
-      provide: SchoolsService,
-      useClass: SchoolsService,
-    },
-    {
-      provide: SchoolValidatorService,
-      useClass: SchoolValidatorService,
-    },
-    ParseObjectIdPipe,
-  ],
+  providers: [SchoolsService, SchoolValidatorService, ParseObjectIdPipe],
   exports: [SchoolsService, SchoolValidatorService],
 })
 export class SchoolsModule {}

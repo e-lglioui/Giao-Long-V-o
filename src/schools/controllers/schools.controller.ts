@@ -1,37 +1,94 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Put, 
-  Delete, 
-  Body, 
-  Param, 
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
   UseGuards,
   ValidationPipe,
-  HttpStatus
-} from '@nestjs/common';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiBearerAuth 
-} from '@nestjs/swagger';
-import { SchoolsService } from '../providers/schools.service';
-import { CreateSchoolDto } from '../dto/create-school.dto';
-import { School } from '../schemas/school.schema';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { ParseObjectIdPipe } from '../pipes/mongodb-id.pipe';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { Role } from '../../auth/enums/role.enum';
-@ApiTags('schools')
-@ApiBearerAuth()
-@Controller('schools')
-@UseGuards(JwtAuthGuard, RolesGuard)
-export class SchoolsController {
-  constructor(private readonly schoolsService: SchoolsService) {}
+  HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  UploadedFiles,
+  Query,
+  Logger,
+} from "@nestjs/common"
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody, ApiQuery } from "@nestjs/swagger"
+import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express"
+import  { Express } from "express"
+import { SchoolsService } from "../providers/schools.service"
+import  { CreateSchoolDto } from "../dto/create-school.dto"
+import { School } from "../schemas/school.schema"
+import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard"
+import { RolesGuard } from "../../auth/guards/roles.guard"
+import { ParseObjectIdPipe } from "../pipes/mongodb-id.pipe"
 
+@ApiTags("schools")
+@ApiBearerAuth()
+@Controller("schools")
+export class SchoolsController {
+  private readonly logger = new Logger(SchoolsController.name)
+
+  constructor(private readonly schoolsService: SchoolsService) {
+    this.logger.log("SchoolsController initialized")
+  }
+
+  // Test route to verify controller is working
+  @Get("test")
+  @ApiOperation({ summary: "Test endpoint to verify controller is working" })
+  test() {
+    this.logger.log("Test endpoint called")
+    return { message: "Schools controller is working!" }
+  }
+
+  // IMPORTANT: Place all static routes BEFORE dynamic routes
+  // Static routes for map and nearby search
+  @Get("map")
+  @ApiOperation({ summary: "Get all schools with location data for map display" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "List of schools with location data",
+    type: [School],
+  })
+  async getSchoolsForMap(): Promise<School[]> {
+    this.logger.log("Getting schools for map")
+    const schools = await this.schoolsService.findAll()
+    return schools.filter(
+      (school) =>
+        school.location &&
+        typeof school.location.latitude === "number" &&
+        typeof school.location.longitude === "number",
+    )
+  }
+
+  @Get("nearby")
+  @ApiOperation({ summary: "Find schools near a location" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "List of nearby schools",
+    type: [School],
+  })
+  @ApiQuery({ name: "latitude", required: true, type: Number })
+  @ApiQuery({ name: "longitude", required: true, type: Number })
+  @ApiQuery({ name: "maxDistance", required: false, type: Number })
+  findNearbySchools(
+    @Query('latitude') latitude: string,
+    @Query('longitude') longitude: string,
+    @Query('maxDistance') maxDistance?: string,
+  ): Promise<School[]> {
+    this.logger.log(`Finding nearby schools at lat: ${latitude}, lng: ${longitude}`)
+    return this.schoolsService.findNearbySchools(
+      Number(latitude),
+      Number(longitude),
+      maxDistance ? Number(maxDistance) : undefined,
+    )
+  }
+
+  // Now the regular CRUD operations with dynamic routes
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Create a new school' })
   @ApiResponse({ 
@@ -54,18 +111,20 @@ export class SchoolsController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(Role.ADMIN, Role.STAFF)
-  @ApiOperation({ summary: 'Get all schools' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'List of all schools',
-    type: [School] 
+  @ApiOperation({ summary: "Get all schools" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "List of all schools",
+    type: [School],
   })
   findAll(): Promise<School[]> {
-    return this.schoolsService.findAll();
+    return this.schoolsService.findAll()
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(Role.ADMIN, Role.STAFF)
   @ApiOperation({ summary: 'Get a school by id' })
   @ApiResponse({ 
@@ -81,23 +140,25 @@ export class SchoolsController {
     return this.schoolsService.findOne(id);
   }
 
-  @Put(':id')
+  @Put(":id")
+  @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Update a school' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'School updated',
-    type: School 
+  @ApiOperation({ summary: "Update a school" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "School updated",
+    type: School,
   })
   update(
     @Param('id', ParseObjectIdPipe) id: string,
     @Body(new ValidationPipe({ transform: true })) 
-    updateSchoolDto: Partial<CreateSchoolDto>
+    updateSchoolDto: Partial<CreateSchoolDto>,
   ): Promise<School> {
-    return this.schoolsService.update(id, updateSchoolDto);
+    return this.schoolsService.update(id, updateSchoolDto)
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Delete a school' })
   @ApiResponse({ 
@@ -108,33 +169,108 @@ export class SchoolsController {
     await this.schoolsService.remove(id);
   }
 
-  @Put(':id/instructors/:instructorId')
+  @Post(":id/images")
+  @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Add instructor to school' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'Instructor added to school',
-    type: School 
+  @ApiOperation({ summary: "Upload an image for a school" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        image: {
+          type: "string",
+          format: "binary",
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Image uploaded successfully",
+    type: School,
+  })
+  @UseInterceptors(FileInterceptor("image"))
+  async uploadImage(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<School> {
+    if (!file) {
+      throw new Error("No image file uploaded");
+    }
+    const imageUrl = `/images/${file.filename}`
+    return this.schoolsService.addImage(id, imageUrl)
+  }
+
+  @Post(":id/multiple-images")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Upload multiple images for a school" })
+  @ApiConsumes("multipart/form-data")
+  @ApiBody({
+    schema: {
+      type: "object",
+      properties: {
+        images: {
+          type: "array",
+          items: {
+            type: "string",
+            format: "binary",
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Images uploaded successfully",
+    type: School,
+  })
+  @UseInterceptors(FilesInterceptor("images", 10))
+  async uploadMultipleImages(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+  ): Promise<School> {
+    let school = await this.schoolsService.findOne(id)
+
+    for (const file of files) {
+      const imageUrl = `/images/${file.filename}`
+      school = await this.schoolsService.addImage(id, imageUrl)
+    }
+
+    return school
+  }
+
+  @Put(":id/instructors/:instructorId")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Add instructor to school" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Instructor added to school",
+    type: School,
   })
   addInstructor(
     @Param('id', ParseObjectIdPipe) id: string,
-    @Param('instructorId', ParseObjectIdPipe) instructorId: string
+    @Param('instructorId', ParseObjectIdPipe) instructorId: string,
   ): Promise<School> {
-    return this.schoolsService.addInstructor(id, instructorId);
+    return this.schoolsService.addInstructor(id, instructorId)
   }
 
-  @Put(':id/students/:studentId')
+  @Put(":id/students/:studentId")
+  @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(Role.ADMIN, Role.STAFF)
-  @ApiOperation({ summary: 'Add student to school' })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
-    description: 'Student added to school',
-    type: School 
+  @ApiOperation({ summary: "Add student to school" })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: "Student added to school",
+    type: School,
   })
   addStudent(
     @Param('id', ParseObjectIdPipe) id: string,
-    @Param('studentId', ParseObjectIdPipe) studentId: string
+    @Param('studentId', ParseObjectIdPipe) studentId: string,
   ): Promise<School> {
-    return this.schoolsService.addStudent(id, studentId);
+    return this.schoolsService.addStudent(id, studentId)
   }
 }
+

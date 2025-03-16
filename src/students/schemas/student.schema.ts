@@ -7,6 +7,14 @@ import { Document, Schema as MongooseSchema } from 'mongoose';
 })
 export class Student extends Document {
   @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+  })
+  userId: MongooseSchema.Types.ObjectId;
+
+  @Prop({
     required: true,
     trim: true,
   })
@@ -26,15 +34,15 @@ export class Student extends Document {
 
   @Prop({
     required: true,
-    type: MongooseSchema.Types.ObjectId,
-    ref: 'User'
   })
-  userId: MongooseSchema.Types.ObjectId;
+  dateOfBirth: Date;
 
   @Prop({
     required: true,
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'School' // Assuming you have a School schema
   })
-  dateOfBirth: Date;
+  school: MongooseSchema.Types.ObjectId;
 
   @Prop({
     required: true,
@@ -58,6 +66,11 @@ export class Student extends Document {
     default: {},
   })
   grades: Map<string, number>;
+
+  // Getter for full name
+  get fullName(): string {
+    return `${this.firstName} ${this.lastName}`;
+  }
 }
 
-export const StudentSchema = SchemaFactory.createForClass(Student); 
+export const StudentSchema = SchemaFactory.createForClass(Student);

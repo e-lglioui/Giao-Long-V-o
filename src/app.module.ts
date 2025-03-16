@@ -13,7 +13,8 @@ import { EventsModule } from './events/events.module';
 import {SchoolsModule } from './schools/schools.module';
 import { StudentsModule } from './students/students.module';
 import { existsSync, readdirSync } from 'fs';
-
+import { UploadModule } from './upload/upload.module';
+import { UploadController } from './upload/upload.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -56,6 +57,7 @@ import { existsSync, readdirSync } from 'fs';
       },
       inject: [ConfigService],
     }),
+    UploadModule, // Ajoutez cette ligne,
     DatabaseModule,
     AuthModule,
     UserModule,
@@ -64,6 +66,7 @@ import { existsSync, readdirSync } from 'fs';
     StudentsModule,
     MongooseModule.forRoot('mongodb+srv://elglioui:2072003Elglioui@gio-long.5q7hs.mongodb.net/?retryWrites=true&w=majority&appName=gio-long'),
   ],
+  controllers: [UploadController], 
 })
 export class AppModule implements NestModule, OnModuleInit {
   async onModuleInit() {

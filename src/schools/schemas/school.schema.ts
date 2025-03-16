@@ -14,6 +14,14 @@ export class Schedule {
   operatingDays: string[]
 }
 
+export class Location {
+  @Prop({ type: Number })
+  latitude: number
+
+  @Prop({ type: Number })
+  longitude: number
+}
+
 @Schema({ timestamps: true })
 export class School extends Document {
   @Prop({ required: true, default: undefined }) // Explicitly set default to undefined
@@ -36,6 +44,9 @@ export class School extends Document {
 
   @Prop({ type: Schedule, default: { openingTime: "08:00", closingTime: "16:00" } })
   schedule: Schedule
+
+  @Prop({ type: Location })
+  location: Location
 
   @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: "User" }] })
   instructors: User[]
@@ -61,4 +72,7 @@ export class School extends Document {
 }
 
 export const SchoolSchema = SchemaFactory.createForClass(School)
+
+// Add a 2dsphere index for geospatial queries
+SchoolSchema.index({ "location.latitude": 1, "location.longitude": 1 })
 

@@ -20,6 +20,11 @@ export class Profile extends Document {
   @Prop({ required: false })
   bio?: string;
 
+  @Prop({ required: false })
+  phone?: string;
+
+  @Prop({ required: false })
+  address?: string;
 }
 
 export const ProfileSchema = SchemaFactory.createForClass(Profile);

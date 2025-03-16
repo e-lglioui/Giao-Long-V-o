@@ -3,14 +3,14 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { StudentService } from '../providers/student.service';
 import { CreateStudentDto } from '../dtos/create-student.dto';
 import { Student } from '../schemas/student.schema';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { Role } from '../../auth/enums/role.enum';
-import { RolesGuard } from '../../auth/guards/roles.guard';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+// import { Roles } from '../../auth/decorators/roles.decorator';
+// import { Role } from '../../auth/enums/role.enum';
+// import { RolesGuard } from '../../auth/guards/roles.guard';
+// import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
 @ApiTags('students')
 @Controller('students')
-@UseGuards(JwtAuthGuard, RolesGuard)
+// @UseGuards(JwtAuthGuard, RolesGuard)
 export class StudentsController {
   constructor(private readonly studentService: StudentService) {}
 

@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
 import { Role } from '../../auth/enums/role.enum';
 
 @Schema({
@@ -77,7 +77,23 @@ export class User extends Document {
   })
   stripeCustomerId?: string;
 
-  // Getter virtuel pour le nom complet
+  // Profile reference
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Profile',
+    default: null
+  })
+  profile?: MongooseSchema.Types.ObjectId;
+
+  // Student reference
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Student',
+    default: null
+  })
+  studentProfile?: MongooseSchema.Types.ObjectId;
+
+  // Getter for full name
   get fullName(): string {
     return `${this.firstName} ${this.lastName}`;
   }
@@ -85,11 +101,11 @@ export class User extends Document {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-// Ajouter les virtuals au schéma
+// Add virtuals to schema
 UserSchema.virtual('fullName').get(function(this: User) {
   return `${this.firstName} ${this.lastName}`;
 });
 
-// S'assurer que les virtuals sont inclus dans la sérialisation
+// Ensure virtuals are included in serialization
 UserSchema.set('toJSON', { virtuals: true });
 UserSchema.set('toObject', { virtuals: true });

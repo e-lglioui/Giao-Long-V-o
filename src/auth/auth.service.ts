@@ -78,22 +78,49 @@ export class AuthService {
     return { message: 'Email confirmed successfully' };
   }
 
+  // async login(loginDto: LoginDto) {
+  //   const user = await this.userService.findByEmail(loginDto.email);
+  //   if (!user || !user.isConfirmed) {
+  //     throw new UnauthorizedException('Invalid credentials or unconfirmed email');
+  //   }
+
+  //   const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+  //   if (!isPasswordValid) {
+  //     throw new UnauthorizedException('Invalid credentials');
+  //   }
+
+  //   const payload = { sub: user.id, email: user.email };
+  //   return {
+  //     access_token: this.jwtService.sign(payload),
+  //   };
+  // }
   async login(loginDto: LoginDto) {
     const user = await this.userService.findByEmail(loginDto.email);
     if (!user || !user.isConfirmed) {
       throw new UnauthorizedException('Invalid credentials or unconfirmed email');
     }
-
+  
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
-
+  
     const payload = { sub: user.id, email: user.email };
+    const accessToken = this.jwtService.sign(payload);
+  
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roles: user.roles,
+      },
     };
   }
+  
 
   async forgotPassword(email: string) {
     const user = await this.userService.findByEmail(email);
@@ -145,4 +172,9 @@ export class AuthService {
       },
     });
   }
+  async logout(user: any) {
+    // You could implement token blacklisting here if needed
+    return { message: "Logout successful" }
+  }
+
 }

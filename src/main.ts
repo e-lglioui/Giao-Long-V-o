@@ -25,12 +25,12 @@ async function bootstrap() {
   )
 
   // Configuration de CORS
-  app.enableCors({
-    origin: "http://localhost:5173",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    credentials: true,
-  })
-
+  // app.enableCors({
+  //   origin: ["http://localhost:5173", "http://localhost:8081"],
+  //   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  //   credentials: true,
+  // })
+  app.enableCors({ origin: "*", credentials: true })
   // Set up Swagger
   const config = new DocumentBuilder()
     .setTitle("Your API")

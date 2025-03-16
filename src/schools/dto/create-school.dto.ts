@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, IsNumber, IsObject, ValidateNested } from "class-validator"
+import { IsString, IsOptional, IsArray, IsNumber, IsObject, ValidateNested, Min, Max } from "class-validator"
 import { ApiProperty } from "@nestjs/swagger"
 import { Type } from "class-transformer"
 
@@ -15,6 +15,26 @@ export class ScheduleDto {
   @IsArray()
   @IsOptional()
   operatingDays?: string[]
+}
+
+// Enhance the LocationDto to better support map functionality
+export class LocationDto {
+  @ApiProperty({ required: true, description: "Latitude coordinate", example: 48.8566 })
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  latitude: number
+
+  @ApiProperty({ required: true, description: "Longitude coordinate", example: 2.3522 })
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  longitude: number
+
+  @ApiProperty({ required: false, description: "Address description" })
+  @IsString()
+  @IsOptional()
+  address?: string
 }
 
 export class CreateSchoolDto {
@@ -58,5 +78,12 @@ export class CreateSchoolDto {
   @IsArray()
   @IsOptional()
   instructors?: string[]
+
+  @ApiProperty({ required: false, type: LocationDto })
+  @IsObject()
+  @ValidateNested()
+  @Type(() => LocationDto)
+  @IsOptional()
+  location?: LocationDto
 }
 
