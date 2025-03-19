@@ -17,13 +17,15 @@ import {
 } from "@nestjs/common"
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody, ApiQuery } from "@nestjs/swagger"
 import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express"
-import  { Express } from "express"
+import type { Express } from "express"
 import { SchoolsService } from "../providers/schools.service"
 import  { CreateSchoolDto } from "../dto/create-school.dto"
 import { School } from "../schemas/school.schema"
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard"
 import { RolesGuard } from "../../auth/guards/roles.guard"
 import { ParseObjectIdPipe } from "../pipes/mongodb-id.pipe"
+import { InstructorsService } from "../../instructors/providers/instructors.service"
+import { CreateInstructorDto } from "../../instructors/dto/create-instructor.dto"
 
 @ApiTags("schools")
 @ApiBearerAuth()
@@ -31,7 +33,10 @@ import { ParseObjectIdPipe } from "../pipes/mongodb-id.pipe"
 export class SchoolsController {
   private readonly logger = new Logger(SchoolsController.name)
 
-  constructor(private readonly schoolsService: SchoolsService) {
+  constructor(
+    private readonly schoolsService: SchoolsService,
+    private readonly instructorsService: InstructorsService,
+  ) {
     this.logger.log("SchoolsController initialized")
   }
 
@@ -196,7 +201,7 @@ export class SchoolsController {
     @UploadedFile() file: Express.Multer.File,
   ): Promise<School> {
     if (!file) {
-      throw new Error("No image file uploaded");
+      throw new Error("No image file uploaded")
     }
     const imageUrl = `/images/${file.filename}`
     return this.schoolsService.addImage(id, imageUrl)
@@ -241,16 +246,38 @@ export class SchoolsController {
     return school
   }
 
+  @Post(":id/instructors")
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(Role.ADMIN)
+  @ApiOperation({ summary: "Add new instructor to school" })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: "Instructor created and added to school",
+    type: School,
+  })
+  async addInstructor(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body(new ValidationPipe({ transform: true })) createInstructorDto: CreateInstructorDto,
+  ): Promise<School> {
+    this.logger.log(`Creating and adding instructor to school ${id}`)
+
+    // Create the instructor first
+    const instructor = await this.instructorsService.create(createInstructorDto)
+
+    // Then add the instructor to the school
+    return this.schoolsService.addInstructor(id, instructor.userId.toString())
+  }
+
   @Put(":id/instructors/:instructorId")
   @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(Role.ADMIN)
-  @ApiOperation({ summary: "Add instructor to school" })
+  @ApiOperation({ summary: "Add existing instructor to school" })
   @ApiResponse({
     status: HttpStatus.OK,
     description: "Instructor added to school",
     type: School,
   })
-  addInstructor(
+  addExistingInstructor(
     @Param('id', ParseObjectIdPipe) id: string,
     @Param('instructorId', ParseObjectIdPipe) instructorId: string,
   ): Promise<School> {

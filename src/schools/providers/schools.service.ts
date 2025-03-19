@@ -333,5 +333,9 @@ export class SchoolsService {
   private deg2rad(deg: number): number {
     return deg * (Math.PI / 180)
   }
+
+  async getSchoolsByInstructorId(instructorId: string): Promise<School[]> {
+    return this.schoolModel.find({ instructors: instructorId }).exec();
+  }
 }
 

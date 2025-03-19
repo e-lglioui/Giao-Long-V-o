@@ -11,7 +11,7 @@ import { CoursesModule } from "../courses/courses.module"
 import { User, UserSchema } from "../users/schemas/user.schema"
 import { StudentsModule } from "../students/students.module"
 import { UploadModule } from "../upload/upload.module"
-
+import { InstructorsModule } from "../instructors/instructors.module";
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -23,6 +23,7 @@ import { UploadModule } from "../upload/upload.module"
     CoursesModule,
     StudentsModule,
     UploadModule,
+    InstructorsModule,
   ],
   controllers: [SchoolsController],
   providers: [SchoolsService, SchoolValidatorService, ParseObjectIdPipe],

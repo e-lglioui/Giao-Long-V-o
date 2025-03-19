@@ -15,6 +15,8 @@ import { StudentsModule } from './students/students.module';
 import { existsSync, readdirSync } from 'fs';
 import { UploadModule } from './upload/upload.module';
 import { UploadController } from './upload/upload.controller';
+// import { EmailModule } from "./email/email.module"
+import { InstructorsModule } from "./instructors/instructors.module"
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -64,6 +66,8 @@ import { UploadController } from './upload/upload.controller';
     EventsModule,
     SchoolsModule ,
     StudentsModule,
+    // EmailModule, 
+    InstructorsModule,
     MongooseModule.forRoot('mongodb+srv://elglioui:2072003Elglioui@gio-long.5q7hs.mongodb.net/?retryWrites=true&w=majority&appName=gio-long'),
   ],
   controllers: [UploadController], 
