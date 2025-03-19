@@ -4,10 +4,13 @@ import { Logger, ValidationPipe } from "@nestjs/common"
 import * as dotenv from "dotenv"
 import * as express from "express"
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger"
+import { join } from 'path'
+import { NestExpressApplication } from '@nestjs/platform-express'
+import { existsSync, mkdirSync } from 'fs'
 
 async function bootstrap() {
   dotenv.config()
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule)
 
   // Add explicit body parsing middleware
   app.use(express.json({ limit: "10mb" }))
@@ -31,6 +34,25 @@ async function bootstrap() {
   //   credentials: true,
   // })
   app.enableCors({ origin: "*", credentials: true })
+
+  // Créer les dossiers d'upload s'ils n'existent pas
+  const uploadPaths = [
+    join(process.cwd(), 'uploads'),
+    join(process.cwd(), 'uploads', 'images'),
+    join(process.cwd(), 'uploads', 'documents')
+  ];
+  
+  uploadPaths.forEach(path => {
+    if (!existsSync(path)) {
+      mkdirSync(path, { recursive: true });
+    }
+  });
+
+  // Configuration pour servir des fichiers statiques
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/', // Cela signifie que les fichiers seront accessibles via /images/ au lieu de /uploads/images/
+  });
+
   // Set up Swagger
   const config = new DocumentBuilder()
     .setTitle("Your API")
