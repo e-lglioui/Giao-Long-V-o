@@ -66,7 +66,7 @@ import { InstructorsModule } from "./instructors/instructors.module"
     EventsModule,
     SchoolsModule ,
     StudentsModule,
-    // EmailModule, 
+    
     InstructorsModule,
     MongooseModule.forRoot('mongodb+srv://elglioui:2072003Elglioui@gio-long.5q7hs.mongodb.net/?retryWrites=true&w=majority&appName=gio-long'),
   ],

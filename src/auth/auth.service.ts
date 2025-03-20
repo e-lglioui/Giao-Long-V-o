@@ -96,6 +96,7 @@ export class AuthService {
   // }
   async login(loginDto: LoginDto) {
     const user = await this.userService.findByEmail(loginDto.email);
+    console.log('User from database:', user);
     if (!user || !user.isConfirmed) {
       throw new UnauthorizedException('Invalid credentials or unconfirmed email');
     }
@@ -105,7 +106,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
   
-    const payload = { sub: user.id, email: user.email };
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    console.log('Payload for JWT:', payload);
     const accessToken = this.jwtService.sign(payload);
   
     return {
@@ -116,7 +118,7 @@ export class AuthService {
         username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
-        roles: user.roles,
+        role: user.role,
       },
     };
   }

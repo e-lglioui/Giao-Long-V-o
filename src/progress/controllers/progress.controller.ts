@@ -28,14 +28,14 @@ export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Create progress record' })
   async create(@Body() createProgressDto: CreateProgressDto) {
     return this.progressService.create(createProgressDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Get all progress records' })
   async findAll() {
     return this.progressService.findAll();
@@ -54,7 +54,7 @@ export class ProgressController {
   }
 
   @Post(':id/exam')
-  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Add exam result' })
   async addExamResult(
     @Param('id') id: string,
@@ -64,7 +64,7 @@ export class ProgressController {
   }
 
   @Post(':id/skill')
-  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Evaluate skill' })
   async evaluateSkill(
     @Param('id') id: string,
@@ -74,7 +74,7 @@ export class ProgressController {
   }
 
   @Put(':id')
-  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Update progress record' })
   async update(
     @Param('id') id: string,

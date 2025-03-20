@@ -11,6 +11,7 @@ import {
   ValidationPipe,
   HttpStatus,
   Patch,
+  Req,
 } from "@nestjs/common"
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from "@nestjs/swagger"
 import type { EnrollmentService } from "../providers/enrollment.service"
@@ -19,6 +20,7 @@ import { Enrollment, EnrollmentStatus } from "../schemas/enrollment.schema"
 import { JwtAuthGuard } from "../../auth/guards/jwt-auth.guard"
 import { RolesGuard } from "../../auth/guards/roles.guard"
 import { ParseObjectIdPipe } from "../../schools/pipes/mongodb-id.pipe"
+import { EnrollmentPaymentDto } from "../dto/enrollment-payment.dto"
 
 @ApiTags("enrollments")
 @ApiBearerAuth()
@@ -170,6 +172,32 @@ export class EnrollmentController {
   })
   async remove(@Param('id', ParseObjectIdPipe) id: string): Promise<void> {
     await this.enrollmentService.remove(id);
+  }
+
+  @Post('payment')
+  @ApiOperation({ summary: 'Create a payment intent for enrollment' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Payment intent created',
+  })
+  async createEnrollmentPayment(
+    @Body(new ValidationPipe({ transform: true })) enrollmentPaymentDto: EnrollmentPaymentDto,
+    @Req() req
+  ): Promise<any> {
+    return this.enrollmentService.createEnrollmentPayment(enrollmentPaymentDto, req.user);
+  }
+
+  @Get('confirm-payment/:paymentIntentId')
+  @ApiOperation({ summary: 'Confirm enrollment after payment' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Enrollment confirmed after payment',
+  })
+  async confirmEnrollmentPayment(
+    @Param('paymentIntentId') paymentIntentId: string,
+    @Req() req
+  ): Promise<any> {
+    return this.enrollmentService.confirmEnrollmentPayment(paymentIntentId, req.user);
   }
 }
 

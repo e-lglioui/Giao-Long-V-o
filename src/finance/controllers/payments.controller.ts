@@ -54,7 +54,7 @@ export class PaymentsController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.SCHOOL_ADMIN)
   @ApiOperation({ summary: 'Get all payments' })
   async findAll() {
     return this.paymentsService.findAll();
@@ -73,7 +73,7 @@ export class PaymentsController {
   }
 
   @Post(':id/refund')
-  @Roles(Role.ADMIN)
+  @Roles(Role.SCHOOL_ADMIN)
   @ApiOperation({ summary: 'Refund payment' })
   async refundPayment(
     @Param('id') id: string,

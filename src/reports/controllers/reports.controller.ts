@@ -22,28 +22,28 @@ export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Generate new report' })
   async generateReport(@Body() createReportDto: CreateReportDto) {
     return this.reportsService.generateReport(createReportDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Get all reports' })
   async findAll(@Query() filters: any) {
     return this.reportsService.findAll(filters);
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Get report by id' })
   async findOne(@Param('id') id: string) {
     return this.reportsService.findOne(id);
   }
 
   @Post(':id/archive')
-  @Roles(Role.ADMIN)
+  @Roles(Role.SCHOOL_ADMIN)
   @ApiOperation({ summary: 'Archive report' })
   async archiveReport(@Param('id') id: string) {
     return this.reportsService.archiveReport(id);

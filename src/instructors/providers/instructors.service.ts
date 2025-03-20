@@ -27,7 +27,7 @@ export class InstructorsService {
     // Check if user with this email already exists
     let user = await this.userModel.findOne({ email: createInstructorDto.email })
 
-    if (user && user.roles.includes(Role.INSTRUCTOR)) {
+    if (user && user.role === Role.INSTRUCTOR) {
       throw new BadRequestException(`User with email ${createInstructorDto.email} is already an instructor`)
     }
 
@@ -42,7 +42,7 @@ export class InstructorsService {
         password: await bcrypt.hash(password, 10),
         firstName: createInstructorDto.firstName,
         lastName: createInstructorDto.lastName,
-        roles: [Role.INSTRUCTOR],
+        role: Role.INSTRUCTOR,
         isConfirmed: true, // Auto-confirm instructor accounts
       })
 
@@ -50,7 +50,7 @@ export class InstructorsService {
       this.logger.log(`Created new instructor user with ID: ${user._id}`)
     } else {
       // Update existing user to add instructor role
-      user.roles.push(Role.INSTRUCTOR)
+      user.role = Role.INSTRUCTOR;
       await user.save()
       this.logger.log(`Added instructor role to existing user ${user._id}`)
     }
@@ -70,7 +70,7 @@ export class InstructorsService {
     this.logger.log(`Created instructor profile for user ${user._id}`)
 
     // Send email with credentials if new user
-    if (!user.roles.includes(Role.INSTRUCTOR)) {
+    if (user.role !== Role.INSTRUCTOR) {
       await this.emailService.sendInstructorCredentials(
         user.email,
         password,
@@ -129,13 +129,18 @@ export class InstructorsService {
     }
 
     // Update the instructor profile
-    if (updateInstructorDto.bio) instructorProfile.bio = updateInstructorDto.bio
-    if (updateInstructorDto.phone) instructorProfile.phone = updateInstructorDto.phone
-    if (updateInstructorDto.address) instructorProfile.address = updateInstructorDto.address
+    // Only update fields that are defined in the DTO
     if (updateInstructorDto.specialties) instructorProfile.specialties = updateInstructorDto.specialties
-    if (updateInstructorDto.certifications) instructorProfile.certifications = updateInstructorDto.certifications
-    if (updateInstructorDto.yearsOfExperience)
-      instructorProfile.yearsOfExperience = updateInstructorDto.yearsOfExperience
+    
+    // For other properties that don't exist in the DTO, keep the previous implementation but with type safety
+    // You may need to update the UpdateInstructorDto to include these properties if needed
+    if ('bio' in updateInstructorDto && updateInstructorDto['bio']) instructorProfile.bio = updateInstructorDto['bio'] as string
+    if ('phone' in updateInstructorDto && updateInstructorDto['phone']) instructorProfile.phone = updateInstructorDto['phone'] as string
+    if ('address' in updateInstructorDto && updateInstructorDto['address']) instructorProfile.address = updateInstructorDto['address'] as string
+    if ('certifications' in updateInstructorDto && updateInstructorDto['certifications']) 
+      instructorProfile.certifications = updateInstructorDto['certifications'] as Certification[]
+    if ('yearsOfExperience' in updateInstructorDto && updateInstructorDto['yearsOfExperience'])
+      instructorProfile.yearsOfExperience = updateInstructorDto['yearsOfExperience'] as number
 
     await instructorProfile.save()
 
@@ -171,7 +176,10 @@ export class InstructorsService {
     const user = await this.userModel.findById(instructorProfile.userId).exec()
 
     if (user) {
-      user.roles = user.roles.filter((role) => role !== Role.INSTRUCTOR)
+      // Update user role from INSTRUCTOR to USER if they currently have INSTRUCTOR role
+      if (user.role === Role.INSTRUCTOR) {
+        user.role = Role.USER;
+      }
       await user.save()
       this.logger.log(`Removed instructor role from user ${user._id}`)
     }

@@ -26,7 +26,7 @@ export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.SCHOOL_ADMIN)
   @ApiOperation({ summary: 'Create a new event' })
   @ApiResponse({ status: HttpStatus.CREATED, description: 'Event created successfully' })
   async create(@Body() createEventDto: CreateEventDto) {
@@ -46,7 +46,7 @@ export class EventsController {
   }
 
   @Put(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.SCHOOL_ADMIN)
   @ApiOperation({ summary: 'Update event' })
   async update(
     @Param('id') id: string,
@@ -56,7 +56,7 @@ export class EventsController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.SCHOOL_ADMIN)
   @ApiOperation({ summary: 'Delete event' })
   async remove(@Param('id') id: string) {
     return this.eventsService.remove(id);
@@ -73,7 +73,7 @@ export class EventsController {
   }
 
   @Put(':id/participants/:userId/results')
-  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Update participant results' })
   async updateParticipantResults(
     @Param('id') id: string,
@@ -84,7 +84,7 @@ export class EventsController {
   }
 
   @Get(':id/statistics')
-  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Get event statistics' })
   async getEventStatistics(@Param('id') id: string) {
     return this.eventsService.getEventStatistics(id);

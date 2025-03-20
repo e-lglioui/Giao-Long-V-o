@@ -18,7 +18,7 @@ export class PaymentsService {
   async createPayment(
     createPaymentDto: CreatePaymentDto,
     user: User
-  ): Promise<Payment> {
+  ): Promise<any> {
     let stripeCustomerId = user.stripeCustomerId;
 
     if (!stripeCustomerId) {
@@ -54,7 +54,13 @@ export class PaymentsService {
       metadata: createPaymentDto.metadata
     });
 
-    return payment.save();
+    await payment.save();
+    
+    // Return both the payment document and the client secret
+    return {
+      ...payment.toObject(),
+      stripeClientSecret: paymentIntent.client_secret
+    };
   }
 
   async confirmPayment(paymentIntentId: string): Promise<Payment> {

@@ -64,7 +64,7 @@ export class InstructorsController {
 
   @Patch(":id")
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.INSTRUCTOR)
+  // @Roles(Role.ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: "Update instructor by id" })
   async update(
     @Param('id', ParseObjectIdPipe) id: string,

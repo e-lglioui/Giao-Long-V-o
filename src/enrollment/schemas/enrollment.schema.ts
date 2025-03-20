@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
-import { Document, Schema as MongooseSchema } from "mongoose"
+import { Document, Schema as MongooseSchema, Types } from "mongoose"
 import type { User } from "../../users/schemas/user.schema"
 import type { School } from "../../schools/schemas/school.schema"
 import type { Class } from "../../classes/schemas/class.schema"
@@ -7,17 +7,28 @@ import type { Class } from "../../classes/schemas/class.schema"
 export enum EnrollmentStatus {
   PENDING = "pending",
   ACTIVE = "active",
+  APPROVED = "approved",
   COMPLETED = "completed",
   CANCELLED = "cancelled",
 }
 
 @Schema({ timestamps: true })
 export class Enrollment extends Document {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: "User", required: true })
-  studentId: User
+  @Prop({ 
+    type: MongooseSchema.Types.ObjectId, 
+    ref: "User", 
+    required: true 
+  })
+  studentId: User | string
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: "User" })
+  user: User
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: "School", required: true })
   schoolId: School
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: "School" })
+  school: School
 
   @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: "Class" }], default: [] })
   classes: Class[]
@@ -30,6 +41,15 @@ export class Enrollment extends Document {
 
   @Prop({ type: Date })
   completionDate: Date
+
+  @Prop({ 
+    type: MongooseSchema.Types.Mixed, 
+    ref: "User" 
+  })
+  approvedBy: Types.ObjectId | string | User
+
+  @Prop({ type: Date })
+  approvedAt: Date
 
   @Prop({ type: Object, default: {} })
   paymentDetails: Record<string, any>

@@ -26,42 +26,42 @@ export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 
   @Post()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Create attendance record' })
   async create(@Body() createAttendanceDto: CreateAttendanceDto): Promise<Attendance> {
     return this.attendanceService.create(createAttendanceDto);
   }
 
   @Get()
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Get all attendance records' })
   async findAll(): Promise<Attendance[]> {
     return this.attendanceService.findAll();
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Get attendance record by id' })
   async findOne(@Param('id') id: string): Promise<Attendance> {
     return this.attendanceService.findOne(id);
   }
 
   @Get('student/:studentId')
-  @Roles(Role.ADMIN, Role.TEACHER, Role.STUDENT)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR, Role.STUDENT)
   @ApiOperation({ summary: 'Get attendance records by student' })
   async findByStudent(@Param('studentId') studentId: string): Promise<Attendance[]> {
     return this.attendanceService.findByStudent(studentId);
   }
 
   @Get('course/:courseId')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Get attendance records by course' })
   async findByCourse(@Param('courseId') courseId: string): Promise<Attendance[]> {
     return this.attendanceService.findByCourse(courseId);
   }
 
   @Put(':id')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Update attendance record' })
   async update(
     @Param('id') id: string,
@@ -71,14 +71,14 @@ export class AttendanceController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.SCHOOL_ADMIN)
   @ApiOperation({ summary: 'Delete attendance record' })
   async remove(@Param('id') id: string): Promise<void> {
     return this.attendanceService.remove(id);
   }
 
   @Get('stats/:schoolId')
-  @Roles(Role.ADMIN, Role.TEACHER)
+  @Roles(Role.SCHOOL_ADMIN, Role.INSTRUCTOR)
   @ApiOperation({ summary: 'Get attendance statistics for a school' })
   @ApiQuery({ 
     name: 'startDate', 

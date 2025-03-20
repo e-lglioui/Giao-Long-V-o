@@ -5,12 +5,16 @@ import { EnrollmentService } from "./providers/enrollment.service"
 import { Enrollment, EnrollmentSchema } from "./schemas/enrollment.schema"
 import { SchoolsModule } from "../schools/schools.module"
 import { ClassesModule } from "../classes/classes.module"
+import { FinanceModule } from "../finance/finance.module"
+import { UserModule } from "../users/users.module"
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Enrollment.name, schema: EnrollmentSchema }]),
     SchoolsModule,
     ClassesModule,
+    FinanceModule,
+    UserModule
   ],
   controllers: [EnrollmentController],
   providers: [EnrollmentService],

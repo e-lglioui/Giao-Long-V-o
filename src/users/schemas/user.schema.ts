@@ -65,12 +65,12 @@ export class User extends Document {
   resetTokenExpiresAt: Date;
 
   @Prop({
-    type: [String],
+    type: String,
     enum: Role,
-    default: [Role.STUDENT]
+    default: Role.USER
   })
-  roles: Role[];
-
+  role: Role;
+  
   @Prop({
     type: String,
     default: null

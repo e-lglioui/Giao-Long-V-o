@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsOptional, IsArray, ValidateNested, IsNumber, Min } from "class-validator"
+import { IsString, IsEmail, IsOptional, IsArray, ValidateNested, IsNumber, Min, IsNotEmpty, MinLength } from "class-validator"
 import { ApiProperty } from "@nestjs/swagger"
 import { Type } from "class-transformer"
 
@@ -29,17 +29,39 @@ export class CertificationDto {
 }
 
 export class CreateInstructorDto {
-  @ApiProperty({ required: true })
+  @IsNotEmpty()
+  @IsString()
+  username: string
+
+  @IsNotEmpty()
+  @IsEmail()
+  email: string
+
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(6)
+  password: string
+
+  @IsNotEmpty()
   @IsString()
   firstName: string
 
-  @ApiProperty({ required: true })
+  @IsNotEmpty()
   @IsString()
   lastName: string
 
-  @ApiProperty({ required: true })
-  @IsEmail()
-  email: string
+  @IsOptional()
+  @IsString()
+  rank?: string
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  specialties?: string[]
+
+  @IsOptional()
+  @IsString()
+  biography?: string
 
   @ApiProperty({ required: false })
   @IsString()
@@ -55,11 +77,6 @@ export class CreateInstructorDto {
   @IsString()
   @IsOptional()
   bio?: string
-
-  @ApiProperty({ required: false, type: [String] })
-  @IsArray()
-  @IsOptional()
-  specialties?: string[]
 
   @ApiProperty({ required: false })
   @IsNumber()

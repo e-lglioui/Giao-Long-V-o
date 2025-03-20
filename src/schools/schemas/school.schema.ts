@@ -69,6 +69,9 @@ export class School extends Document {
     revenue: number
     performanceStats: Map<string, number>
   }
+
+  @Prop({ type: Number, default: 0 })
+  enrollmentFee: number
 }
 
 export const SchoolSchema = SchemaFactory.createForClass(School)
