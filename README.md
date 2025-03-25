@@ -43,6 +43,7 @@ Master's Portal est une application conçue pour gérer les écoles de Kung Fu a
     STRIPE_SECRET_KEY=your_stripe_secret_key
     EMAIL_USER=your_email@example.com
     EMAIL_PASS=your_password
+    MAPS_API_KEY=your_google_maps_api_key
     ```
 3. **Lancer l'application avec Docker** :
     ```bash
