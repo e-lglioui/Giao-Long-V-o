@@ -40,5 +40,5 @@ jobs:
 
       - name: Build and push backend image
         run: |
-          docker build --no-cache -t elgliouiyoucode/backend-image./backend-image
-           docker push elgliouiyoucode/backend-image:v1.0
+          docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/backend-image:latest ./backend-image
+          docker push ${{ secrets.DOCKER_USERNAME }}/backend-image:latest
