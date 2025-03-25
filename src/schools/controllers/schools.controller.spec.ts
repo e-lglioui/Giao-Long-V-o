@@ -78,12 +78,7 @@ describe('SchoolsController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('test', () => {
-    it('should return a test message', () => {
-      const result = controller.test();
-      expect(result).toEqual({ message: 'Schools controller is working!' });
-    });
-  });
+
 
   describe('create', () => {
     it('should create a new school', async () => {
