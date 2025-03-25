@@ -16,7 +16,8 @@ export class SchoolsService {
     @InjectModel(School.name) private readonly schoolModel: Model<School>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
     @InjectModel(Student.name) private readonly studentModel: Model<Student>,
-    @Inject(forwardRef(() => SchoolValidatorService)) private readonly validatorService: SchoolValidatorService
+    @Inject(forwardRef(() => SchoolValidatorService)) private readonly validatorService: SchoolValidatorService,
+    @InjectModel('InstructorProfile') private readonly instructorProfileModel: Model<any>
   ) {}
 
   async create(createSchoolDto: CreateSchoolDto): Promise<School> {
@@ -116,33 +117,69 @@ export class SchoolsService {
     }
   }
 
-  async addInstructor(schoolId: string, instructorId: string): Promise<School> {
+  async addInstructor(schoolId: string, instructor: any): Promise<School> {
     try {
       const school = await this.schoolModel.findById(schoolId)
       if (!school) {
         throw new SchoolNotFoundException(schoolId)
       }
 
-      const instructor = await this.userModel.findById(instructorId)
-      if (!instructor) {
-        throw new InvalidOperationException("Instructor not found")
+      // Extract just the instructor ID if a full object was passed
+      let instructorId: string
+
+      if (typeof instructor === "string") {
+        // If it's already a string ID
+        instructorId = instructor
+      } else if (instructor && typeof instructor === "object") {
+        // If it's an object, extract the ID
+        instructorId = instructor._id
+          ? typeof instructor._id === "string"
+            ? instructor._id
+            : instructor._id.toString()
+          : instructor.id
+            ? instructor.id
+            : null
+      } else {
+        throw new InvalidOperationException("Invalid instructor data provided")
       }
 
+      if (!instructorId) {
+        throw new InvalidOperationException("No instructor ID found in the provided data")
+      }
+
+      // First check if this is an instructor profile ID and get the user ID if it is
+      const instructorProfile = await this.instructorProfileModel.findById(instructorId).exec()
+      if (instructorProfile) {
+        // If this is an instructor profile ID, use the userId instead
+        instructorId = instructorProfile.userId.toString()
+        this.logger.log(`Found instructor profile, using user ID: ${instructorId}`)
+      }
+
+      // Check if instructor exists
+      const instructorExists = await this.userModel.findById(instructorId)
+      if (!instructorExists) {
+        throw new InvalidOperationException(`Instructor with ID ${instructorId} not found`)
+      }
+
+      // Check if instructor is already in the school
       if (school.instructors.some((instructor) => instructor.toString() === instructorId)) {
         throw new InvalidOperationException("Instructor already assigned to this school")
       }
 
-      school.instructors.push(instructor)
+      // Add instructor to school - use the instructor object, not just the ID
+      school.instructors.push(instructorExists)
       const updatedSchool = await school.save()
 
       this.logger.log(`Added instructor ${instructorId} to school ${schoolId}`)
       return updatedSchool
     } catch (error) {
-      this.logger.error(`Failed to add instructor ${instructorId} to school ${schoolId}: ${error.message}`, error.stack)
+      this.logger.error(
+        `Failed to add instructor ${JSON.stringify(instructor)} to school ${schoolId}: ${error.message}`,
+        error.stack,
+      )
       throw error
     }
   }
-
   async addStudent(schoolId: string, studentId: string): Promise<School> {
     try {
       await this.validatorService.validateCapacity(schoolId, 1)
@@ -335,7 +372,15 @@ export class SchoolsService {
   }
 
   async getSchoolsByInstructorId(instructorId: string): Promise<School[]> {
-    return this.schoolModel.find({ instructors: instructorId }).exec();
+    return this.schoolModel.find({ instructors: instructorId }).exec()
+  }
+  /**
+   * Find schools by admin ID
+   * @param adminId The ID of the admin
+   * @returns Array of schools associated with the admin
+   */
+  async findSchoolsByAdmin(adminId: string): Promise<School[]> {
+    return this.schoolModel.find({ adminId }).exec()
   }
 }
 

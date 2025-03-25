@@ -56,9 +56,9 @@ export class InstructorProfile extends Document {
   @Prop()
   sportsPassport?: string // Chemin vers le fichier PDF
   
-  @Prop({ type: [MongooseSchema.Types.ObjectId], ref: 'School', default: [] })
-  schools: MongooseSchema.Types.ObjectId[]
+  // Change to store school IDs as strings instead of ObjectIds
+  @Prop({ type: [String], default: [] })
+  schools: string[]
 }
 
 export const InstructorProfileSchema = SchemaFactory.createForClass(InstructorProfile)
-

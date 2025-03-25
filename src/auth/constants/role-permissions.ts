@@ -10,7 +10,7 @@ export const ROLE_PERMISSIONS = {
     Permission.USER_READ,
     Permission.USER_UPDATE,
     Permission.USER_DELETE,
-    
+    // Permission. SCHOOL_MANAGE_STUDENTS,
     // School management
     Permission.SCHOOL_READ,
     Permission.SCHOOL_UPDATE,

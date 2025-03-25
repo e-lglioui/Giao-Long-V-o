@@ -255,17 +255,30 @@ export class SchoolsController {
     description: "Instructor created and added to school",
     type: School,
   })
+  @Post(":id/instructors")
+  @UseGuards(JwtAuthGuard, RolesGuard)
   async addInstructor(
     @Param('id', ParseObjectIdPipe) id: string,
     @Body(new ValidationPipe({ transform: true })) createInstructorDto: CreateInstructorDto,
   ): Promise<School> {
     this.logger.log(`Creating and adding instructor to school ${id}`)
-
+  
     // Create the instructor first
     const instructor = await this.instructorsService.create(createInstructorDto)
-
+    
+    // Log the instructor object to see its structure
+    this.logger.log(`Instructor created: ${JSON.stringify(instructor)}`)
+    
+    // Log both potential ID formats
+    this.logger.log(`Instructor _id: ${instructor._id}`)
+    this.logger.log(`Instructor id: ${instructor.id}`)
+    
+    // Make sure we're passing just the ID, not the entire instructor object
+    const instructorId = instructor._id.toString() || instructor.id
+    this.logger.log(`Using instructor ID: ${instructorId}`)
+    
     // Then add the instructor to the school
-    return this.schoolsService.addInstructor(id, instructor.userId.toString())
+    return this.schoolsService.addInstructor(id, instructorId)
   }
 
   @Put(":id/instructors/:instructorId")

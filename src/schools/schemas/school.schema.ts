@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose"
-import { Document, Schema as MongooseSchema } from "mongoose"
+import mongoose, { Document, Schema as MongooseSchema } from "mongoose"
 import type { User } from "../../users/schemas/user.schema"
 import type { Student } from "../../students/schemas/student.schema"
 
@@ -72,10 +72,12 @@ export class School extends Document {
 
   @Prop({ type: Number, default: 0 })
   enrollmentFee: number
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: "User" })
+  adminId: mongoose.Schema.Types.ObjectId
 }
 
 export const SchoolSchema = SchemaFactory.createForClass(School)
 
 // Add a 2dsphere index for geospatial queries
 SchoolSchema.index({ "location.latitude": 1, "location.longitude": 1 })
-

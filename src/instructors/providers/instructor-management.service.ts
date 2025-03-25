@@ -1,142 +1,112 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Role } from '../../auth/enums/role.enum';
 import { User } from '../../users/schemas/user.schema';
+import { InstructorProfile } from '../schemas/instructor-profile.schema';
+import { Certification } from '../schemas/instructor-profile.schema';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class InstructorManagementService {
+  private readonly logger = new Logger(InstructorManagementService.name);
+
   constructor(
     @InjectModel('User') private readonly userModel: Model<User>,
     @InjectModel('School') private readonly schoolModel: Model<any>,
     @InjectModel('SchoolInstructor') private readonly schoolInstructorModel: Model<any>,
+    @InjectModel('InstructorProfile') private readonly instructorProfileModel: Model<InstructorProfile>,
   ) {}
 
-  /**
-   * Create an instructor and associate with a school
-   */
-  async createInstructor(schoolId: string, createInstructorDto: any, currentUser: any) {
-    // Check if school exists
+async addInstructor(schoolId: string, instructor: any, currentUser: any): Promise<any> {
+  try {
+    // Get the school
     const school = await this.schoolModel.findById(schoolId).exec();
     if (!school) {
       throw new NotFoundException(`School with ID ${schoolId} not found`);
     }
 
-    // If current user is a school admin, verify they belong to this school
-    if (currentUser.role === Role.SCHOOL_ADMIN) {
-      const isSchoolAdmin = await this.isUserSchoolAdmin(currentUser.id, schoolId);
-      if (!isSchoolAdmin) {
-        throw new ForbiddenException('You are not authorized to add instructors to this school');
+    // Extract just the instructor ID if a full object was passed
+    const instructorId = instructor._id ? 
+      (typeof instructor._id === 'string' ? instructor._id : instructor._id.toString()) : 
+      (instructor.id ? instructor.id : instructor);
+
+    // Check if instructor exists
+    const instructorExists = await this.userModel.findById(instructorId).exec();
+    if (!instructorExists) {
+      console.log("test 1")
+      throw new NotFoundException(`Instructor with ID ${instructorId} not found`);
+    }
+
+    // Check if instructor is already in the school
+    if (school.instructors.includes(instructorId)) {
+      throw new BadRequestException(`Instructor is already associated with this school`);
+    }
+
+    // Add instructor to school
+    school.instructors.push(instructorId);
+    await school.save();
+
+    // Update instructor profile to include this school
+    const instructorProfile = await this.instructorProfileModel.findOne({ userId: instructorId }).exec();
+    if (instructorProfile) {
+      // Store school ID as string
+      if (!instructorProfile.schools.includes(schoolId)) {
+        instructorProfile.schools.push(schoolId);
+        await instructorProfile.save();
       }
     }
 
-    // Check if user with email already exists
-    const existingUser = await this.userModel.findOne({ email: createInstructorDto.email }).exec();
-    
-    let userId: string;
-
-    if (existingUser) {
-      // If user exists but is not an instructor yet
-      if (existingUser.role !== Role.INSTRUCTOR) {
-        existingUser.role = Role.INSTRUCTOR;
-        await existingUser.save();
-      }
-      userId = existingUser._id.toString();
-    } else {
-      // Create new user with INSTRUCTOR role
-      const salt = await bcrypt.genSalt();
-      const hashedPassword = await bcrypt.hash(createInstructorDto.password, salt);
-
-      const newUser = new this.userModel({
-        username: createInstructorDto.username,
-        email: createInstructorDto.email,
-        password: hashedPassword,
-        firstName: createInstructorDto.firstName,
-        lastName: createInstructorDto.lastName,
-        role: Role.INSTRUCTOR,
-        isConfirmed: true // Auto-confirm instructor accounts
-      });
-
-      const savedUser = await newUser.save();
-      userId = savedUser._id.toString();
-    }
-
-    // Check if instructor is already associated with this school
-    const existingInstructor = await this.schoolInstructorModel.findOne({
-      user: userId,
-      school: schoolId,
-      isActive: true
-    }).exec();
-
-    if (existingInstructor) {
-      throw new BadRequestException('This instructor is already associated with this school');
-    }
-
-    // Create school instructor relationship
-    const schoolInstructor = new this.schoolInstructorModel({
-      user: userId,
-      school: schoolId,
-      specialties: createInstructorDto.specialties || [],
-      rank: createInstructorDto.rank || 'Regular Instructor',
-      biography: createInstructorDto.biography || '',
-      isActive: true,
-      createdAt: new Date(),
-      createdBy: currentUser.id
-    });
-
-    await schoolInstructor.save();
-
-    // Return newly created instructor information
-    return {
+    this.logger.log(`Added instructor ${instructorId} to school ${schoolId}`);
+    return { 
       message: 'Instructor added to school successfully',
-      instructorId: userId,
       school: school.name,
-      rank: schoolInstructor.rank
+      instructorId: instructorId
     };
+  } catch (error) {
+    this.logger.error(`Failed to add instructor ${JSON.stringify(instructor)} to school ${schoolId}: ${error.message}`, error.stack);
+    throw error;
   }
-
+}
   /**
    * Get all instructors for a specific school
    */
-  async getInstructorsBySchool(schoolId: string, currentUser: any) {
-    // Check if school exists
+  async getInstructorsBySchool(schoolId: string, user?: any) {
+    // First, verify the school exists and has instructors
     const school = await this.schoolModel.findById(schoolId).exec();
     if (!school) {
       throw new NotFoundException(`School with ID ${schoolId} not found`);
     }
-
-    // If current user is a school admin, verify they belong to this school
-    if (currentUser.role === Role.SCHOOL_ADMIN) {
-      const isSchoolAdmin = await this.isUserSchoolAdmin(currentUser.id, schoolId);
-      if (!isSchoolAdmin) {
-        throw new ForbiddenException('You are not authorized to view instructors for this school');
-      }
+    
+    this.logger.debug(`School instructors array: ${JSON.stringify(school.instructors)}`);
+    
+    if (!school.instructors || school.instructors.length === 0) {
+      return {
+        school: school.name,
+        instructorCount: 0,
+        instructors: []
+      };
     }
-
-    // Find all instructor relationships for this school
-    const schoolInstructors = await this.schoolInstructorModel.find({
-      school: schoolId,
-      isActive: true
-    })
-    .populate('user', 'username email firstName lastName')
-    .exec();
-
+    
+    // Convert string IDs to ObjectIds if needed
+    const instructorIds = school.instructors.map(id => 
+      typeof id === 'string' ? new Types.ObjectId(id) : id
+    );
+    
+    // Find all instructors that match the IDs in the school
+    const instructors = await this.userModel.find({
+      _id: { $in: instructorIds }
+    }).exec();
+    
+    this.logger.debug(`Found ${instructors.length} instructors for school ${schoolId}`);
+    
     return {
       school: school.name,
-      instructorCount: schoolInstructors.length,
-      instructors: schoolInstructors.map(instructor => ({
-        id: instructor.user._id,
-        name: `${instructor.user.firstName} ${instructor.user.lastName}`,
-        email: instructor.user.email,
-        username: instructor.user.username,
-        rank: instructor.rank,
-        specialties: instructor.specialties,
-        biography: instructor.biography,
-        joinedAt: instructor.createdAt
-      }))
+      instructorCount: instructors.length,
+      instructors: instructors
     };
   }
+  
 
   /**
    * Get a specific instructor details
@@ -147,7 +117,7 @@ export class InstructorManagementService {
     if (!school) {
       throw new NotFoundException(`School with ID ${schoolId} not found`);
     }
-
+  
     // If current user is a school admin, verify they belong to this school
     if (currentUser.role === Role.SCHOOL_ADMIN) {
       const isSchoolAdmin = await this.isUserSchoolAdmin(currentUser.id, schoolId);
@@ -155,33 +125,37 @@ export class InstructorManagementService {
         throw new ForbiddenException('You are not authorized to view instructors for this school');
       }
     }
-
-    // Find instructor relationship
-    const instructorRelationship = await this.schoolInstructorModel.findOne({
-      user: instructorId,
-      school: schoolId,
-      isActive: true
-    })
-    .populate('user', 'username email firstName lastName')
-    .exec();
-
-    if (!instructorRelationship) {
+  
+    // Check if instructor is in the school's instructors array
+    if (!school.instructors.some(id => id.toString() === instructorId)) {
       throw new NotFoundException(`Instructor with ID ${instructorId} not found in this school`);
     }
-
+  
+    // Get the instructor user
+    const instructor = await this.userModel.findById(instructorId)
+      .select('username email firstName lastName')
+      .exec();
+  
+    if (!instructor) {
+      throw new NotFoundException(`Instructor with ID ${instructorId} not found`);
+    }
+  
+    // Get instructor profile if it exists
+    const instructorProfile = await this.instructorProfileModel.findOne({ userId: instructorId }).exec();
+  
     return {
-      id: instructorRelationship.user._id,
-      name: `${instructorRelationship.user.firstName} ${instructorRelationship.user.lastName}`,
-      email: instructorRelationship.user.email,
-      username: instructorRelationship.user.username,
-      rank: instructorRelationship.rank,
-      specialties: instructorRelationship.specialties,
-      biography: instructorRelationship.biography,
-      joinedAt: instructorRelationship.createdAt,
+      id: instructor._id,
+      name: `${instructor.firstName} ${instructor.lastName}`,
+      email: instructor.email,
+      username: instructor.username,
+      // Include profile data if available
+      ...(instructorProfile && {
+        specialties: instructorProfile.specialties || [],
+        biography: instructorProfile.bio || '',
+      }),
       school: school.name
     };
   }
-
   /**
    * Update instructor details
    */
@@ -300,6 +274,17 @@ export class InstructorManagementService {
     instructorRelationship.deactivatedBy = currentUser.id;
     await instructorRelationship.save();
 
+    // Update instructor profile to remove school
+    const instructorProfile = await this.instructorProfileModel.findOne({ userId: instructorId }).exec();
+    if (instructorProfile && instructorProfile.schools) {
+      const schoolObjectId = new Types.ObjectId(schoolId);
+      // Use string comparison instead of equals method
+      instructorProfile.schools = instructorProfile.schools.filter(
+        school => school.toString() !== schoolId
+      );
+      await instructorProfile.save();
+    }
+
     // Check if user is an instructor in any other active schools
     const otherInstructorRoles = await this.schoolInstructorModel.countDocuments({
       user: instructorId,
@@ -323,6 +308,129 @@ export class InstructorManagementService {
   }
 
   /**
+   * Add profile image for instructor
+   */
+  async addProfileImage(schoolId: string, instructorId: string, imageUrl: string, currentUser: any) {
+    // Verify permissions
+    await this.verifySchoolInstructorAccess(schoolId, instructorId, currentUser);
+    
+    // Get instructor profile
+    const instructorProfile = await this.getOrCreateInstructorProfile(instructorId);
+    
+    // Add image to profile
+    instructorProfile.profileImages = instructorProfile.profileImages || [];
+    instructorProfile.profileImages.push(imageUrl);
+    
+    await instructorProfile.save();
+    
+    return {
+      message: 'Profile image added successfully',
+      instructorId,
+      imageUrl
+    };
+  }
+  
+  /**
+   * Add certification for instructor
+   */
+  async addCertification(schoolId: string, instructorId: string, certification: Certification, currentUser: any) {
+    // Verify permissions
+    await this.verifySchoolInstructorAccess(schoolId, instructorId, currentUser);
+    
+    // Get instructor profile
+    const instructorProfile = await this.getOrCreateInstructorProfile(instructorId);
+    
+    // Add certification to profile
+    instructorProfile.certifications = instructorProfile.certifications || [];
+    instructorProfile.certifications.push(certification);
+    
+    await instructorProfile.save();
+    
+    return {
+      message: 'Certification added successfully',
+      instructorId,
+      certification: certification.name
+    };
+  }
+  
+  /**
+   * Update sports passport for instructor
+   */
+  async updateSportsPassport(schoolId: string, instructorId: string, fileUrl: string, currentUser: any) {
+    // Verify permissions
+    await this.verifySchoolInstructorAccess(schoolId, instructorId, currentUser);
+    
+    // Get instructor profile
+    const instructorProfile = await this.getOrCreateInstructorProfile(instructorId);
+    
+    // Update sports passport
+    instructorProfile.sportsPassport = fileUrl;
+    
+    await instructorProfile.save();
+    
+    return {
+      message: 'Sports passport updated successfully',
+      instructorId,
+      fileUrl
+    };
+  }
+  
+  /**
+   * Get full profile for instructor
+   */
+  async getFullProfile(schoolId: string, instructorId: string, currentUser: any) {
+    // Verify permissions
+    await this.verifySchoolInstructorAccess(schoolId, instructorId, currentUser);
+    
+    // Get instructor relationship
+    const instructorRelationship = await this.schoolInstructorModel.findOne({
+      user: instructorId,
+      school: schoolId,
+      isActive: true
+    })
+    .populate('user', 'username email firstName lastName')
+    .exec();
+    
+    if (!instructorRelationship) {
+      throw new NotFoundException(`Instructor with ID ${instructorId} not found in this school`);
+    }
+    
+    // Get instructor profile
+    const instructorProfile = await this.instructorProfileModel.findOne({ userId: instructorId })
+      .exec();
+    
+    // Get school details
+    const school = await this.schoolModel.findById(schoolId)
+      .select('name location contactInfo')
+      .exec();
+    
+    return {
+      basicInfo: {
+        id: instructorRelationship.user._id,
+        name: `${instructorRelationship.user.firstName} ${instructorRelationship.user.lastName}`,
+        email: instructorRelationship.user.email,
+        username: instructorRelationship.user.username,
+      },
+      schoolInfo: {
+        school: school.name,
+        rank: instructorRelationship.rank,
+        specialties: instructorRelationship.specialties,
+        biography: instructorRelationship.biography,
+        joinedAt: instructorRelationship.createdAt,
+      },
+      profileInfo: instructorProfile ? {
+        bio: instructorProfile.bio,
+        phone: instructorProfile.phone,
+        address: instructorProfile.address,
+        yearsOfExperience: instructorProfile.yearsOfExperience,
+        certifications: instructorProfile.certifications || [],
+        profileImages: instructorProfile.profileImages || [],
+        sportsPassport: instructorProfile.sportsPassport,
+      } : null
+    };
+  }
+
+  /**
    * Helper method to check if a user is an admin for a specific school
    */
   private async isUserSchoolAdmin(userId: string, schoolId: string): Promise<boolean> {
@@ -336,4 +444,57 @@ export class InstructorManagementService {
 
     return !!adminRelationship;
   }
-} 
+  
+  /**
+   * Helper method to verify access to school instructor
+   */
+  private async verifySchoolInstructorAccess(schoolId: string, instructorId: string, currentUser: any) {
+    // Check if school exists
+    const school = await this.schoolModel.findById(schoolId).exec();
+    if (!school) {
+      throw new NotFoundException(`School with ID ${schoolId} not found`);
+    }
+
+    // If current user is a school admin, verify they belong to this school
+    if (currentUser.role === Role.SCHOOL_ADMIN) {
+      const isSchoolAdmin = await this.isUserSchoolAdmin(currentUser.id, schoolId);
+      if (!isSchoolAdmin) {
+        throw new ForbiddenException('You are not authorized to access instructors for this school');
+      }
+    }
+
+    // Find instructor relationship
+    const instructorRelationship = await this.schoolInstructorModel.findOne({
+      user: instructorId,
+      school: schoolId,
+      isActive: true
+    }).exec();
+
+    if (!instructorRelationship) {
+      throw new NotFoundException(`Instructor with ID ${instructorId} not found in this school`);
+    }
+  }
+  
+  /**
+   * Helper method to get or create instructor profile
+   */
+  private async getOrCreateInstructorProfile(instructorId: string): Promise<InstructorProfile> {
+    let instructorProfile = await this.instructorProfileModel.findOne({ userId: instructorId }).exec();
+    
+    if (!instructorProfile) {
+      instructorProfile = new this.instructorProfileModel({
+        userId: instructorId,
+        bio: '',
+        phone: '',
+        address: '',
+        specialties: [],
+        certifications: [],
+        yearsOfExperience: 0,
+        profileImages: [],
+        schools: []
+      });
+    }
+    
+    return instructorProfile;
+  }
+}

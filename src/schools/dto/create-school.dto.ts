@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, IsNumber, IsObject, ValidateNested, Min, Max } from "class-validator"
+import { IsString, IsOptional, IsArray, IsNumber, IsObject, ValidateNested, Min, Max, IsMongoId } from "class-validator"
 import { ApiProperty } from "@nestjs/swagger"
 import { Type } from "class-transformer"
 
@@ -67,6 +67,11 @@ export class CreateSchoolDto {
   @IsOptional()
   maxStudents?: number
 
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsMongoId()
+  adminId?: string;
+
   @ApiProperty({ required: false, type: ScheduleDto })
   @IsObject()
   @ValidateNested()
@@ -86,4 +91,3 @@ export class CreateSchoolDto {
   @IsOptional()
   location?: LocationDto
 }
-

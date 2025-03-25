@@ -84,4 +84,4 @@ export class SchoolInstructor extends Document {
   deactivatedBy: MongooseSchema.Types.ObjectId;
 }
 
-export const SchoolInstructorSchema = SchemaFactory.createForClass(SchoolInstructor); 
+export const SchoolInstructorSchema = SchemaFactory.createForClass(SchoolInstructor);

@@ -4,7 +4,7 @@ export enum Permission {
   USER_READ = 'user:read',
   USER_UPDATE = 'user:update',
   USER_DELETE = 'user:delete',
-
+  // SCHOOL_MANAGE_STUDENTS=""
   // School permissions
   SCHOOL_CREATE = 'school:create',
   SCHOOL_READ = 'school:read',
