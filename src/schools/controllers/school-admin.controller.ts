@@ -16,7 +16,6 @@ export class SchoolAdminController {
     private readonly schoolAdminService: SchoolAdminService,
   ) {}
 
-  // Only Super Admin can create a School Admin
   @Post(':schoolId/admins')
   @Roles(Role.SUPER_ADMIN)
   @RequirePermissions(Permission.USER_CREATE, Permission.SCHOOL_MANAGE_STAFF)
@@ -27,7 +26,6 @@ export class SchoolAdminController {
     return this.schoolAdminService.createSchoolAdmin(schoolId, createSchoolAdminDto);
   }
 
-  // School Admins can view administrators of their own school
   @Get(':schoolId/admins')
   @Roles(Role.SUPER_ADMIN, Role.SCHOOL_ADMIN)
   @RequirePermissions(Permission.USER_READ)
@@ -35,16 +33,13 @@ export class SchoolAdminController {
     @Param('schoolId') schoolId: string,
     @User() user: any
   ) {
-    // If school admin, validate they belong to this school
     if (user.role === Role.SCHOOL_ADMIN) {
       return this.schoolAdminService.getAdminsBySchool(schoolId, user.id);
     }
-    
-    // Super admins can view any school's admins
+
     return this.schoolAdminService.getAdminsBySchool(schoolId);
   }
 
-  // Only Super Admin can remove a School Admin
   @Delete(':schoolId/admins/:adminId')
   @Roles(Role.SUPER_ADMIN)
   @RequirePermissions(Permission.USER_DELETE, Permission.SCHOOL_MANAGE_STAFF)

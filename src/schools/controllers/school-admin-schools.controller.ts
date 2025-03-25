@@ -72,10 +72,10 @@ export class SchoolAdminSchoolsController {
       throw new ForbiddenException("School admin can only create one school")
     }
 
-    // Create the school
+   
     const school = await this.schoolsService.create({
       ...createSchoolDto,
-      adminId: user.id, // Associate the school with this admin
+      adminId: user.id, 
     })
 
     return school
@@ -225,10 +225,8 @@ export class SchoolAdminSchoolsController {
       throw new NotFoundException("You do not have a school yet")
     }
 
-    // Create the instructor first
     const instructor = await this.instructorsService.create(createInstructorDto)
 
-    // Then add the instructor to the school
     return this.schoolsService.addInstructor(schools[0]._id.toString(), instructor.userId.toString())
   }
 

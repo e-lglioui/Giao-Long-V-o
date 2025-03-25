@@ -40,16 +40,6 @@ export class SchoolsController {
     this.logger.log("SchoolsController initialized")
   }
 
-  // Test route to verify controller is working
-  @Get("test")
-  @ApiOperation({ summary: "Test endpoint to verify controller is working" })
-  test() {
-    this.logger.log("Test endpoint called")
-    return { message: "Schools controller is working!" }
-  }
-
-  // IMPORTANT: Place all static routes BEFORE dynamic routes
-  // Static routes for map and nearby search
   @Get("map")
   @ApiOperation({ summary: "Get all schools with location data for map display" })
   @ApiResponse({
@@ -91,7 +81,6 @@ export class SchoolsController {
     )
   }
 
-  // Now the regular CRUD operations with dynamic routes
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   // @Roles(Role.ADMIN)
