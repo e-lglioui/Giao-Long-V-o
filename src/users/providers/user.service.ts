@@ -6,6 +6,17 @@ import { User } from '../schemas/user.schema';
 import { CreateUserDto } from '../dtos/create-user.dto';
 import { UpdateUserDto } from '../dtos/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import { InvalidCredentialsException } from '../../common/exceptions/invalid-credentials.exception';
+
+interface CreateUserWithTokenData {
+  username: string;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  confirmationToken: string;
+  isConfirmed: boolean;
+}
 
 @Injectable()
 export class UserService {
@@ -40,36 +51,11 @@ export class UserService {
     return result as User;
   }
 
-// In user.service.ts
-async createUserWithToken(userData: {
-  username: string;
-  email: string;
-  password: string;
-  confirmationToken: string;
-}): Promise<User> {
-  // Check for existing email
-  const existingEmail = await this.findByEmail(userData.email);
-  if (existingEmail) {
-    throw new ConflictException('Email already exists');
+  async createUserWithToken(userData: CreateUserWithTokenData): Promise<User> {
+    const user = new this.userModel(userData);
+    return user.save();
   }
 
-  // Add check for existing username
-  const existingUsername = await this.userModel.findOne({ username: userData.username });
-  if (existingUsername) {
-    throw new ConflictException('Username already exists');
-  }
-
-  const newUser = new this.userModel({
-    username: userData.username,
-    email: userData.email,
-    password: userData.password,
-    confirmationToken: userData.confirmationToken,
-    isConfirmed: false,
-    resetToken: null,
-    resetTokenExpiresAt: null
-  });
-  return await newUser.save();
-}
   async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     if (updateUserDto.password) {
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
@@ -185,5 +171,33 @@ async createUserWithToken(userData: {
     if (updateResult.matchedCount === 0) {
       throw new NotFoundException('User not found');
     }
+  }
+
+  async validateCredentials(email: string, password: string): Promise<User> {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new InvalidCredentialsException();
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new InvalidCredentialsException();
+    }
+
+    return user;
+  }
+
+  async update(id: string, updateData: Partial<User>): Promise<User> {
+    const user = await this.userModel.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    ).exec();
+
+    if (!user) {
+      throw new NotFoundException(`User #${id} not found`);
+    }
+
+    return user;
   }
 }
