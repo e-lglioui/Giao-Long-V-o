@@ -19,16 +19,14 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: backend-bab-artisanat/package-lock.json
+          cache-dependency-path: ./package-lock.json
 
       - name: Install backend dependencies
-        run: |
-          cd backend-bab-artisanat
+        run: 
           npm install
 
       - name: Run backend tests
-        run: |
-          cd backend-bab-artisanat
+        run: 
           npm run test
 
       - name: Set up Docker Buildx
@@ -42,10 +40,5 @@ jobs:
 
       - name: Build and push backend image
         run: |
-          docker build --no-cache -t nadaelmahfoudi/bab_artisanat_backend:latest ./backend-bab-artisanat
-          docker push nadaelmahfoudi/bab_artisanat_backend:latest
-
-      - name: Build and push frontend image
-        run: |
-          docker build --no-cache -t nadaelmahfoudi/bab_artisanat_frontend:latest ./frontend-bab-artisanat
-          docker push nadaelmahfoudi/bab_artisanat_frontend:latest
+          docker build --no-cache -t elgliouiyoucode/backend-image./backend-image
+           docker push elgliouiyoucode/backend-image:v1.0
