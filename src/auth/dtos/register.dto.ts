@@ -15,4 +15,12 @@ export class RegisterDto {
   @IsString()
   @MinLength(6)
   password: string;
+
+  @ApiProperty()
+  @IsString()
+  firstName: string;
+
+  @ApiProperty()
+  @IsString()
+  lastName: string;
 }

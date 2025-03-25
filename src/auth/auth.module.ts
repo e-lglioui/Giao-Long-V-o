@@ -1,37 +1,41 @@
-// auth.module.ts
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { MailerModule } from '@nestjs-modules/mailer';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
-import { join } from 'path';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UserModule } from '../users/users.module';
+import { PassportModule } from '@nestjs/passport';
+import { LocalStrategy } from './local.strategy';
+import { ConfigModule } from '@nestjs/config';
+import { RolePermissionService } from './services/role-permission.service';
+import { RolesGuard } from './guards/roles.guard';
+
+import { PermissionsGuard } from './guards/permissions.guard';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1d' },
+      signOptions: { expiresIn: process.env.JWT_EXPIRATION },
     }),
-    MailerModule.forRoot({
-      transport: {
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT),
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASSWORD,
-        },
-      },
-      template: {
-        dir: join(__dirname, 'templates'),
-        adapter: new HandlebarsAdapter(),
-      },
-    }),
-    UserModule,
+    forwardRef(() => UserModule),
+    PassportModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [
+    AuthService, 
+    JwtStrategy, 
+    LocalStrategy, 
+    RolePermissionService,
+    RolesGuard,
+    PermissionsGuard
+  ],
+  exports: [
+    AuthService, 
+    RolePermissionService,
+    RolesGuard,
+    PermissionsGuard
+  ],
 })
 export class AuthModule {}
