@@ -59,7 +59,7 @@ import { InstructorsModule } from "./instructors/instructors.module"
       },
       inject: [ConfigService],
     }),
-    UploadModule, // Ajoutez cette ligne,
+    UploadModule, 
     DatabaseModule,
     AuthModule,
     UserModule,
